@@ -1,12 +1,12 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::fs;
 use rstest::rstest;
+use std::fs;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
-fn dies_no_args() -> TestResult{
+fn dies_no_args() -> TestResult {
     let mut cmd = Command::cargo_bin("echor")?;
     cmd.assert()
         .failure()
