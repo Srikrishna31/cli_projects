@@ -25,7 +25,8 @@ pub fn get_args() -> MyResult<Config> {
             Arg::with_name("number_lines")
                 .short("n")
                 .help("Number the output lines, starting at 1.")
-                .takes_value(false),
+                .takes_value(false)
+                .conflicts_with("number_nonblank_lines"),
         )
         .arg(
             Arg::with_name("number_nonblank_lines")
