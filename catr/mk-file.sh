@@ -7,7 +7,7 @@ OUT_DIR="tests/expected"
 
 [[ ! -d "$OUT_DIR" ]] && mkdir -p "$OUT_DIR"
 
-EMPTY="$ROOT/empty.ext"
+EMPTY="$ROOT/empty.txt"
 FOX="$ROOT/fox.txt"
 SPIDERS="$ROOT/spiders.txt"
 BUSTLE="$ROOT/the-bustle.txt"
