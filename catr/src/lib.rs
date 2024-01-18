@@ -47,20 +47,22 @@ pub fn get_args() -> MyResult<Config> {
 pub fn run(config: Config) -> MyResult<()> {
     for f in config.files {
         match open(&f) {
-            Err(e) => eprintln!("Failed to open {f}: {e}"),
+            Err(e) => eprintln!("{f}: {e}"),
             Ok(b) => {
                 let mut counter = 1;
                 for (number, line) in b.lines().enumerate() {
                     let line = line?;
                     if config.number_lines {
-                        println!("{} {}", number, line)
+                        println!("{:>6}\t{line}", number + 1)
                     } else if config.number_nonblank_lines {
                         if !line.is_empty() {
-                            println!("{} {}", counter, line);
+                            println!("{:>6}\t{line}", counter);
                             counter += 1;
                         } else {
-                            println!("{}", line);
+                            println!("{line}");
                         }
+                    } else {
+                        println!("{line}");
                     }
                 }
             }
