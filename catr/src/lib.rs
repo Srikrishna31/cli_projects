@@ -45,18 +45,44 @@ pub fn get_args() -> MyResult<Config> {
     })
 }
 pub fn run(config: Config) -> MyResult<()> {
+    dbg!(&config);
     config.files.iter().for_each(|f| match open(&f) {
         Err(e) => eprintln!("Failed to open {f}: {e}"),
-        Ok(_) => println!("Opened {f}"),
+        Ok(mut b) => {
+            let mut counter = 1;
+            loop {
+                let mut buf = String::new();
+                match b.read_line(&mut buf) {
+                    Ok(0) => break,
+                    Ok(_) => {
+                        if config.number_lines {
+                            print!("{} {}", &counter, &buf);
+                            counter += 1;
+                        } else if config.number_nonblank_lines {
+                            let line = buf.trim();
+                            if line.eq("\r\n") {
+                                print!("{}", &buf);
+                            } else {
+                                print!("{} {}", &counter, &buf);
+                                counter += 1;
+                            }
+                        } else {
+                            print!("{}", &buf);
+                        }
+                        buf.clear();
+                    }
+                    Err(e) => eprintln!("{e}"),
+                }
+            }
+        }
     });
-    // dbg!(config);
     Ok(())
 }
 
 /// Open stdin if a "-" is passed for file name. otherwise try to open the passed in filename.
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     match filename {
-        "_" => Ok(Box::new(BufReader::new(io::stdin()))),
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
