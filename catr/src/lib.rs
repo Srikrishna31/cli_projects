@@ -45,37 +45,27 @@ pub fn get_args() -> MyResult<Config> {
     })
 }
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
-    config.files.iter().for_each(|f| match open(&f) {
-        Err(e) => eprintln!("Failed to open {f}: {e}"),
-        Ok(mut b) => {
-            let mut counter = 1;
-            loop {
-                let mut buf = String::new();
-                match b.read_line(&mut buf) {
-                    Ok(0) => break,
-                    Ok(_) => {
-                        if config.number_lines {
-                            print!("{} {}", &counter, &buf);
+    for f in config.files {
+        match open(&f) {
+            Err(e) => eprintln!("Failed to open {f}: {e}"),
+            Ok(b) => {
+                let mut counter = 1;
+                for (number, line) in b.lines().enumerate() {
+                    let line = line?;
+                    if config.number_lines {
+                        println!("{} {}", number, line)
+                    } else if config.number_nonblank_lines {
+                        if !line.is_empty() {
+                            println!("{} {}", counter, line);
                             counter += 1;
-                        } else if config.number_nonblank_lines {
-                            let line = buf.trim();
-                            if line.eq("\r\n") {
-                                print!("{}", &buf);
-                            } else {
-                                print!("{} {}", &counter, &buf);
-                                counter += 1;
-                            }
                         } else {
-                            print!("{}", &buf);
+                            println!("{}", line);
                         }
-                        buf.clear();
                     }
-                    Err(e) => eprintln!("{e}"),
                 }
             }
         }
-    });
+    }
     Ok(())
 }
 
