@@ -38,6 +38,7 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Print the first K bytes of each file")
                 .num_args(1)
                 .required(false)
+                .conflicts_with("count")
                 .value_parser(value_parser!(usize)),
         )
         .get_matches();
