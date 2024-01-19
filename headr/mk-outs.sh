@@ -19,9 +19,9 @@ done
 ALL="$INPUTS/empty.txt $INPUTS/one.txt $INPUTS/two.txt $INPUTS/three.txt \
     $INPUTS/ten.txt"
     
-head      "$ALL" > ${OUT_DIR}/all.out
-head -n 2 "$ALL" > ${OUT_DIR}/all.n2.out
-head -n 4 "$ALL" > ${OUT_DIR}/all.n4.out
-head -c 1 "$ALL" > ${OUT_DIR}/all.c1.out
-head -c 2 "$ALL" > ${OUT_DIR}/all.c2.out
-head -c 4 "$ALL" > ${OUT_DIR}/all.c4.out
+head      $ALL > ${OUT_DIR}/all.out
+head -n 2 $ALL > ${OUT_DIR}/all.n2.out
+head -n 4 $ALL > ${OUT_DIR}/all.n4.out
+head -c 1 $ALL > ${OUT_DIR}/all.c1.out
+head -c 2 $ALL > ${OUT_DIR}/all.c2.out
+head -c 4 $ALL > ${OUT_DIR}/all.c4.out
