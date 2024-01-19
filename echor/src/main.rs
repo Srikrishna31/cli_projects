@@ -1,27 +1,32 @@
-use clap::{App, Arg};
+use clap::{Arg, Command};
 
 fn main() {
-    let matches = App::new("echor")
+    let matches = Command::new("echor")
         .version("0.1.0")
         .author("Krishna Addepalli <coolkrishna31@gmail.com")
         .about("Rust echo")
         .arg(
-            Arg::with_name("text")
+            Arg::new("text")
                 .value_name("TEXT")
                 .help("Input text")
                 .required(true)
-                .min_values(1),
+                .num_args(1..),
         )
         .arg(
-            Arg::with_name("omit_newline")
-                .short("n")
-                .help("Don not print newline")
-                .takes_value(false),
+            Arg::new("omit_newline")
+                .short('n')
+                .long("skipnewline")
+                .help("Do not print newline")
+                .num_args(0),
         )
         .get_matches();
 
-    let text = matches.values_of_lossy("text").unwrap();
-    let omit_newline = matches.is_present("omit_newline");
+    let text: Vec<String> = matches
+        .get_many::<String>("text")
+        .unwrap()
+        .map(|f| f.to_owned())
+        .collect();
+    let omit_newline = matches.get_flag("omit_newline");
 
     print!("{}{}", text.join(" "), if omit_newline { "" } else { "\n" });
 }
