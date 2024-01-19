@@ -1,9 +1,9 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
-use rand::{distributions::Alphanumeric, Rng};
 use rstest::rstest;
 use std::error::Error;
 use std::fs;
+use utils::gen_bad_file;
 
 type TestResult = Result<(), Box<dyn Error>>;
 
@@ -20,24 +20,10 @@ fn usage() -> TestResult {
         Command::cargo_bin(PRG)?
             .arg(flag)
             .assert()
-            .stdout(predicate::str::contains("USAGE"));
+            .stdout(predicate::str::contains("Usage"));
     }
 
     Ok(())
-}
-
-fn gen_bad_file() -> String {
-    loop {
-        let filename: String = rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(7)
-            .map(char::from)
-            .collect();
-
-        if fs::metadata(&filename).is_err() {
-            return filename;
-        }
-    }
 }
 
 #[test]

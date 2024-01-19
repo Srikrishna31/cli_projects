@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
@@ -12,36 +12,42 @@ pub struct Config {
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 pub fn get_args() -> MyResult<Config> {
-    let matches = App::new("catr")
+    let matches = Command::new("catr")
         .version("0.1.0")
         .author("Krishna Addepalli <coolkrishna31@gmail.com>")
         .about("Rust cat")
         .arg(
-            Arg::with_name("input_files")
+            Arg::new("input_files")
                 .value_name("FILE")
                 .help("Input files separated by spaces")
-                .multiple(true)
+                .num_args(1..)
                 .default_value("-"),
         )
         .arg(
-            Arg::with_name("number_lines")
-                .short("n")
+            Arg::new("number_lines")
+                .short('n')
+                .long("number")
                 .help("Number the output lines, starting at 1.")
-                .takes_value(false)
+                .num_args(0)
                 .conflicts_with("number_nonblank_lines"),
         )
         .arg(
-            Arg::with_name("number_nonblank_lines")
-                .short("b")
+            Arg::new("number_nonblank_lines")
+                .short('b')
+                .long("number_nonblank")
                 .help("Number the non-blank output lines, starting at 1.")
-                .takes_value(false),
+                .num_args(0),
         )
         .get_matches();
 
     Ok(Config {
-        files: matches.values_of_lossy("input_files").unwrap(),
-        number_lines: matches.is_present("number_lines"),
-        number_nonblank_lines: matches.is_present("number_nonblank_lines"),
+        files: matches
+            .get_many::<String>("input_files")
+            .unwrap()
+            .map(|f| f.to_owned())
+            .collect(),
+        number_lines: matches.get_flag("number_lines"),
+        number_nonblank_lines: matches.get_flag("number_nonblank_lines"),
     })
 }
 pub fn run(config: Config) -> MyResult<()> {
