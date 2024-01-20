@@ -3,9 +3,8 @@ use predicates::prelude::*;
 use rstest::rstest;
 use std::error::Error;
 use std::fs;
-use utils::gen_bad_file;
+use utils::{TestResult, gen_bad_file};
 
-type TestResult = Result<(), Box<dyn Error>>;
 
 const PRG: &str = "catr";
 const EMPTY: &str = "tests/inputs/empty.txt";

@@ -2,15 +2,14 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
 use std::fs;
-
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+use utils::TestResult;
 
 #[test]
 fn dies_no_args() -> TestResult {
     let mut cmd = Command::cargo_bin("echor")?;
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("USAGE"));
+        .stderr(predicate::str::contains("Usage"));
 
     Ok(())
 }

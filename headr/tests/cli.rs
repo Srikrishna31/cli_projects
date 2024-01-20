@@ -6,9 +6,8 @@ use std::{
     fs::{self, File},
     io::prelude::*,
 };
-use utils::{gen_bad_file, random_string};
-
-type TestResult = Result<(), Box<dyn Error>>;
+use utils::{gen_bad_file, random_string, TestResult};
+use rstest::rstest;
 
 const PRG: &str = "headr";
 const EMPTY: &str = "./tests/inputs/empty.txt";
@@ -20,25 +19,15 @@ const THREE: &str = "./tests/inputs/three.txt";
 
 const TEN: &str = "./tests/inputs/ten.txt";
 
-#[test]
-fn dies_bad_bytes() -> TestResult {
-    let bad = random_string(None);
-    let expected = format!("invalid value '{}' for '--bytes <bytes>", &bad);
-    Command::cargo_bin(PRG)?
-        .args(&["-c", &bad, EMPTY])
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(expected));
 
-    Ok(())
-}
-
-#[test]
-fn dies_bad_lines() -> TestResult {
-    let bad = random_string(None);
-    let expected = format!("invalid value '{}' for '--lines <count>", &bad);
+#[rstest]
+#[case(&["-c", &random_string(None), EMPTY], "invalid value '{}' for '--bytes <bytes>")]
+#[case(&["-n", &random_string(None), EMPTY], "invalid value '{}' for '--lines <count>")]
+fn dies_bad_arguments(#[case] args: &[&str], #[case] expected: &str) -> TestResult {
+    let bad = args[1];
+    let expected = expected.replace("{}", &bad);
     Command::cargo_bin(PRG)?
-        .args(&["-n", &bad, EMPTY])
+        .args(args)
         .assert()
         .failure()
         .stderr(predicate::str::contains(expected));

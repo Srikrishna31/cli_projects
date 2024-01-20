@@ -1,5 +1,8 @@
+use std::error::Error;
 use rand::{distributions::Alphanumeric, Rng};
 use std::fs;
+
+pub type TestResult = Result<(), Box<dyn Error>>;
 
 pub fn random_string(length: Option<usize>) -> String {
     let length = match length {
