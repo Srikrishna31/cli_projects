@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{parser::ValueSource, Arg, Command};
 use command_utils::{open, MyResult};
 
 #[derive(Debug)]
@@ -47,7 +47,8 @@ pub fn get_args() -> MyResult<Config> {
                 .short('m')
                 .long("chars")
                 .num_args(0)
-                .required(false),
+                .required(false)
+                .conflicts_with("bytes"),
         )
         .arg(
             Arg::new("words")
@@ -60,16 +61,32 @@ pub fn get_args() -> MyResult<Config> {
         )
         .get_matches();
 
+    // if any of the flags came from command line then others should be false. If none of the options
+    // came from command line then make them true.
+    let mut lines = matches.get_flag("lines");
+    let mut words = matches.get_flag("words");
+    let mut bytes = matches.get_flag("bytes");
+    let chars = matches.get_flag("chars");
+
+    if ["lines", "words", "bytes", "chars"]
+        .iter()
+        .all(|v| matches.value_source(v) != Some(ValueSource::CommandLine))
+    {
+        lines = true;
+        words = true;
+        bytes = true;
+    }
+
     Ok(Config {
         files: matches
             .get_many::<String>("input_files")
             .unwrap()
             .map(|f| f.to_owned())
             .collect(),
-        lines: matches.get_flag("lines"),
-        words: matches.get_flag("words"),
-        bytes: matches.get_flag("bytes"),
-        chars: matches.get_flag("chars"),
+        lines,
+        words,
+        bytes,
+        chars,
     })
 }
 
