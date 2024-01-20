@@ -2,9 +2,12 @@
 resolver = "2"
 
 members = [
-    "catr", "command_utils",
+    "catr",
+    "command_utils",
     "echor",
-    "headr", "utils",
+    "headr",
+    "utils",
+    "wcr",
 ]
 
 [profile.release]

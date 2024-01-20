@@ -1,6 +1,6 @@
 use clap::{value_parser, Arg, Command};
 use command_utils::{open, MyResult};
-use std::io::{BufRead, ErrorKind, Read};
+use std::io::{BufRead, Read};
 
 #[derive(Debug)]
 pub struct Config {
@@ -57,15 +57,10 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    let mut buf = if let Some(bytes) = config.bytes {
-        vec![0u8; bytes]
-    } else {
-        vec![0u8; 0]
-    };
-    for (file_num, filename) in config.files.iter().enumerate() {
-        let num_files = config.files.len();
+    let num_files = config.files.len();
 
-        match open(&filename) {
+    for (file_num, filename) in config.files.iter().enumerate() {
+        match open(filename) {
             Err(e) => eprintln!("{filename}: {e}"),
             Ok(mut f) => {
                 if num_files > 1 {

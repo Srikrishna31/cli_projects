@@ -1,8 +1,6 @@
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
-use std::error::Error;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::BufRead;
 
 #[derive(Debug)]
 pub struct Config {
