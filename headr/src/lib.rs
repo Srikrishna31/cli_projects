@@ -62,22 +62,34 @@ pub fn run(config: Config) -> MyResult<()> {
     } else {
         vec![0u8; 0]
     };
-    for filename in config.files {
+    for (file_num, filename) in config.files.iter().enumerate() {
+        let num_files = config.files.len();
+
         match open(&filename) {
             Err(e) => eprintln!("{filename}: {e}"),
             Ok(mut f) => {
-                if config.bytes.is_some() {
-                    match f.read_exact(&mut buf) {
-                        Ok(_) => println!("{}", String::from_utf8_lossy(&buf)),
-                        Err(e) if e.kind() == ErrorKind::UnexpectedEof => {
-                            println!("{}", String::from_utf8_lossy(&buf))
-                        }
-                        Err(e) => eprintln!("{e}"),
-                    }
-                    buf.clear();
+                if num_files > 1 {
+                    println!(
+                        "{}===> {} <===",
+                        if file_num > 0 { "\n" } else { "" },
+                        filename
+                    )
+                }
+
+                if let Some(num) = config.bytes {
+                    let bytes: Result<Vec<_>, _> = f.bytes().take(num).collect();
+                    print!("{}", String::from_utf8_lossy(&bytes?));
                 } else {
-                    for line in f.lines().take(config.lines) {
-                        println!("{}", line?);
+                    let mut line = String::new();
+                    // Use BufRead::read_line so that the newline character is not removed,
+                    // Which will be useful in dealing with OS specific end line characters.
+                    for _ in 0..config.lines {
+                        let bytes = f.read_line(&mut line)?;
+                        if bytes == 0 {
+                            break;
+                        }
+                        print!("{line}");
+                        line.clear();
                     }
                 }
             }
