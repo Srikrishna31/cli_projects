@@ -1,9 +1,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
-use std::fmt::format;
 use std::{
-    error::Error,
     fs::{self, File},
     io::prelude::*,
 };
@@ -63,7 +61,7 @@ fn skips_bad_file() -> TestResult {
 #[case(&[EMPTY, "-n", "2"], "tests/expected/empty.txt.n2.out")]
 #[case(&[EMPTY, "-n", "4"], "tests/expected/empty.txt.n4.out")]
 #[case(&[EMPTY, "-c", "2"], "tests/expected/empty.txt.c2.out")]
-// #[case(&[EMPTY, "-c", "4"], "tests/expected/empty.txt.c4.out")]
+#[case(&[EMPTY, "-c", "4"], "tests/expected/empty.txt.c4.out")]
 #[case(&[ONE], "tests/expected/one.txt.out")]
 #[case(&[ONE, "-n", "2"], "tests/expected/one.txt.n2.out")]
 #[case(&[ONE, "-n", "4"], "tests/expected/one.txt.n4.out")]

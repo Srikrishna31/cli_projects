@@ -1,7 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
-use std::error::Error;
 use std::fs;
 use utils::{gen_bad_file, TestResult};
 
