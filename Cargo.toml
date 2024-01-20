@@ -2,7 +2,7 @@
 resolver = "2"
 
 members = [
-    "catr",
+    "catr", "command_utils",
     "echor",
     "headr", "utils",
 ]
