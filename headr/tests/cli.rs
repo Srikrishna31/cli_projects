@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use rstest::rstest;
 use std::fmt::format;
 use std::{
     error::Error,
@@ -7,7 +8,6 @@ use std::{
     io::prelude::*,
 };
 use utils::{gen_bad_file, random_string, TestResult};
-use rstest::rstest;
 
 const PRG: &str = "headr";
 const EMPTY: &str = "./tests/inputs/empty.txt";
@@ -18,7 +18,6 @@ const TWO: &str = "./tests/inputs/two.txt";
 const THREE: &str = "./tests/inputs/three.txt";
 
 const TEN: &str = "./tests/inputs/ten.txt";
-
 
 #[rstest]
 #[case(&["-c", &random_string(None), EMPTY], "invalid value '{}' for '--bytes <bytes>")]
@@ -55,6 +54,13 @@ fn skips_bad_file() -> TestResult {
         .args([EMPTY, &bad, ONE])
         .assert()
         .stderr(predicate::str::is_match(expected)?);
+
+    Ok(())
+}
+
+fn run_stdin(args: &[&str], input_file: &str, expected_file: &str) -> TestResult {
+    let mut file = File::open(expected_file)?;
+    // let mut buffer = Vec::new();
 
     Ok(())
 }

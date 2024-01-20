@@ -1,5 +1,5 @@
-use std::error::Error;
 use rand::{distributions::Alphanumeric, Rng};
+use std::error::Error;
 use std::fs;
 
 pub type TestResult = Result<(), Box<dyn Error>>;

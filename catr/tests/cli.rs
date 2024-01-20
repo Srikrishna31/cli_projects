@@ -3,8 +3,7 @@ use predicates::prelude::*;
 use rstest::rstest;
 use std::error::Error;
 use std::fs;
-use utils::{TestResult, gen_bad_file};
-
+use utils::{gen_bad_file, TestResult};
 
 const PRG: &str = "catr";
 const EMPTY: &str = "tests/inputs/empty.txt";

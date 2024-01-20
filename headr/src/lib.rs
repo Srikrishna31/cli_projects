@@ -3,7 +3,7 @@ use command_utils::{open, MyResult};
 use std::error::Error;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, ErrorKind, Read};
 
 #[derive(Debug)]
 pub struct Config {
@@ -60,10 +60,32 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
+    let mut buf = if let Some(bytes) = config.bytes {
+        vec![0u8; bytes]
+    } else {
+        vec![0u8; 0]
+    };
     for filename in config.files {
         match open(&filename) {
             Err(e) => eprintln!("{filename}: {e}"),
-            Ok(_) => println!("Opened {filename}"),
+            Ok(mut f) => {
+                if let Some(bytes) = config.bytes {
+                    match f.read_exact(&mut buf) {
+                        Ok(_) => println!("{:?}", &buf),
+                        Err(e) if e.kind() == ErrorKind::UnexpectedEof => println!("{:?}", &buf),
+                        Err(e) => eprintln!("{e}"),
+                    }
+                    buf.clear();
+                } else {
+                    for (number, line) in f.lines().enumerate() {
+                        if number < config.lines {
+                            println!("{}", line?);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
