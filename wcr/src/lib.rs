@@ -92,6 +92,12 @@ pub fn get_args() -> MyResult<Config> {
 
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(config);
+    for filename in &config.files {
+        match open(filename) {
+            Err(e) => eprintln!("{filename}: {e}"),
+            Ok(_) => println!("Opened {filename}"),
+        }
+    }
 
     Ok(())
 }
