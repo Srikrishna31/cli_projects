@@ -1,9 +1,6 @@
 use clap::{value_parser, Arg, Command};
 use command_utils::{open, MyResult};
-use std::error::Error;
-use std::fs::File;
-use std::io;
-use std::io::{BufRead, BufReader, ErrorKind, Read};
+use std::io::{BufRead, ErrorKind, Read};
 
 #[derive(Debug)]
 pub struct Config {
@@ -69,20 +66,18 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(&filename) {
             Err(e) => eprintln!("{filename}: {e}"),
             Ok(mut f) => {
-                if let Some(bytes) = config.bytes {
+                if config.bytes.is_some() {
                     match f.read_exact(&mut buf) {
-                        Ok(_) => println!("{:?}", &buf),
-                        Err(e) if e.kind() == ErrorKind::UnexpectedEof => println!("{:?}", &buf),
+                        Ok(_) => println!("{}", String::from_utf8_lossy(&buf)),
+                        Err(e) if e.kind() == ErrorKind::UnexpectedEof => {
+                            println!("{}", String::from_utf8_lossy(&buf))
+                        }
                         Err(e) => eprintln!("{e}"),
                     }
                     buf.clear();
                 } else {
-                    for (number, line) in f.lines().enumerate() {
-                        if number < config.lines {
-                            println!("{}", line?);
-                        } else {
-                            break;
-                        }
+                    for line in f.lines().take(config.lines) {
+                        println!("{}", line?);
                     }
                 }
             }
