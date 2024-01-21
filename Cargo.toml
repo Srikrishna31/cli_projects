@@ -6,6 +6,7 @@ members = [
     "command_utils",
     "echor",
     "headr",
+    "uniqr",
     "utils",
     "wcr",
 ]
