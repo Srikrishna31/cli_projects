@@ -92,20 +92,54 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
+    let mut total_lines: usize = 0;
+    let mut total_words: usize = 0;
+    let mut total_bytes: usize = 0;
+    let mut total_chars: usize = 0;
+
     for filename in &config.files {
         match open(filename) {
             Err(e) => eprintln!("{filename}: {e}"),
             Ok(f) => {
                 let res = count(f)?;
                 println!(
-                    "{:>6}\t{:>6}\t{:>6} {filename}",
-                    res.num_lines, res.num_words, res.num_bytes
+                    "{}{}{}{}{}",
+                    format_field(res.num_lines, config.lines),
+                    format_field(res.num_words, config.words),
+                    format_field(res.num_bytes, config.bytes),
+                    format_field(res.num_chars, config.chars),
+                    if filename == "-" {
+                        "".to_string()
+                    } else {
+                        format!(" {filename}")
+                    }
                 );
+                total_lines += res.num_lines;
+                total_words += res.num_words;
+                total_bytes += res.num_bytes;
+                total_chars += res.num_chars;
             }
         }
     }
 
+    if config.files.len() > 1 {
+        println!(
+            "{}{}{}{} total",
+            format_field(total_lines, config.lines),
+            format_field(total_words, config.words),
+            format_field(total_bytes, config.bytes),
+            format_field(total_chars, config.chars),
+        );
+    }
     Ok(())
+}
+
+fn format_field(value: usize, show: bool) -> String {
+    if show {
+        format!("{:>8}", value)
+    } else {
+        "".to_string()
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -129,14 +163,14 @@ fn count(mut file: impl BufRead) -> MyResult<FileInfo> {
             Ok(b) => {
                 num_lines += 1;
                 num_bytes += b;
-                num_words += buf.split(" ").count();
+                num_words += buf.split_whitespace().count();
                 num_chars += buf.chars().count();
                 buf.clear();
             }
             Err(e) => {
                 num_lines += 1;
                 num_bytes += buf.bytes().count();
-                num_words += buf.split(" ").count();
+                num_words += buf.split_whitespace().count();
                 num_chars += buf.chars().count();
                 eprintln!("{e}");
                 break;
@@ -154,7 +188,7 @@ fn count(mut file: impl BufRead) -> MyResult<FileInfo> {
 
 #[cfg(test)]
 mod tests {
-    use super::{count, FileInfo};
+    use super::{count, format_field, FileInfo};
     use std::io::Cursor;
 
     #[test]
@@ -169,5 +203,12 @@ mod tests {
             num_chars: 48,
         };
         assert_eq!(info.unwrap(), expected);
+    }
+
+    #[test]
+    fn test_format_field() {
+        assert_eq!(format_field(1, false), "");
+        assert_eq!(format_field(3, true), "       3");
+        assert_eq!(format_field(10, true), "      10");
     }
 }
