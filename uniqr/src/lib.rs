@@ -13,17 +13,46 @@ pub fn get_args() -> MyResult<Config> {
         .version("0.1.0")
         .author("Krishna Addepalli <coolkrishna31@gmail.com>")
         .about("Rust uniq")
-        .arg(Arg::new(""))
+        .arg(
+            Arg::new("in_file")
+                .value_name("IN_FILE")
+                .help("Input file [default: -]")
+                .num_args(1)
+                .default_value("-"),
+        )
+        .arg(
+            Arg::new("out_file")
+                .value_name("OUT_FILE")
+                .help("Output file")
+                .num_args(1)
+                .required(false),
+        )
+        .arg(
+            Arg::new("count")
+                .value_name("COUNT")
+                .num_args(0)
+                .help("Show counts")
+                .short('c')
+                .long("count")
+                .required(false),
+        )
         .get_matches();
 
     Ok(Config {
-        in_file: "".to_string(),
-        out_file: None,
-        count: false,
+        in_file: matches.get_one::<String>("in_file").unwrap().to_owned(),
+        out_file: matches.get_one::<String>("out_file").map(|f| f.to_owned()),
+        count: matches.get_flag("count"),
     })
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    //dbg!(&config);
+    match open(&config.in_file) {
+        Err(e) => {
+            eprintln!("{}: {e}", config.in_file);
+            return Err(e);
+        }
+        Ok(_) => println!("Opened: {}", config.in_file),
+    }
     Ok(())
 }

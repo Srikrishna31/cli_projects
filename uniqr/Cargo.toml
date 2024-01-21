@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 clap = "4"
 command_utils = {path="../command_utils"}
+tempfile = "3"
 
 [dev-dependencies]
 assert_cmd = "2"
