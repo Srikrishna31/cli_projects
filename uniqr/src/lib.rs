@@ -1,5 +1,8 @@
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
+use std::fs::File;
+use std::io;
+use std::io::{BufRead, BufWriter, Write};
 
 #[derive(Debug)]
 pub struct Config {
@@ -52,7 +55,39 @@ pub fn run(config: Config) -> MyResult<()> {
             eprintln!("{}: {e}", config.in_file);
             return Err(e);
         }
-        Ok(_) => println!("Opened: {}", config.in_file),
+        Ok(mut f) => {
+            let mut prev_line = String::new();
+            let mut count = 0;
+            let mut line = String::new();
+            let mut out_file = if let Some(out_path) = config.out_file {
+                File::create(out_path).map(|f| Box::new(f) as Box<dyn Write>)?
+            } else {
+                Box::new(io::stdout())
+            };
+            loop {
+                let bytes = f.read_line(&mut line)?;
+                if bytes == 0 {
+                    break;
+                }
+                if line != prev_line {
+                    writeln!(
+                        &mut out_file,
+                        "{}{}",
+                        if config.count {
+                            format!(" {count}")
+                        } else {
+                            "".to_string()
+                        },
+                        prev_line
+                    )?;
+                    prev_line.clear();
+                    prev_line.push_str(&line);
+                    count = 0;
+                } else {
+                    count += 1;
+                }
+            }
+        }
     }
     Ok(())
 }
