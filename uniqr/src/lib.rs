@@ -16,7 +16,7 @@ pub fn get_args() -> MyResult<Config> {
         .arg(
             Arg::new("in_file")
                 .value_name("IN_FILE")
-                .help("Input file [default: -]")
+                .help("Input file")
                 .num_args(1)
                 .default_value("-"),
         )
@@ -46,7 +46,7 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    //dbg!(&config);
+    dbg!(&config);
     match open(&config.in_file) {
         Err(e) => {
             eprintln!("{}: {e}", config.in_file);
