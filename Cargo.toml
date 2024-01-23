@@ -5,6 +5,7 @@ members = [
     "catr",
     "command_utils",
     "echor",
+    "findr",
     "headr",
     "uniqr",
     "utils",
