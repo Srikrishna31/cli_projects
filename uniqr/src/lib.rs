@@ -2,7 +2,7 @@ use clap::{Arg, Command};
 use command_utils::{open, MyResult};
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufWriter, Write};
+use std::io::{BufRead, Write};
 
 #[derive(Debug)]
 pub struct Config {
@@ -57,36 +57,46 @@ pub fn run(config: Config) -> MyResult<()> {
         }
         Ok(mut f) => {
             let mut prev_line = String::new();
-            let mut count = 0;
+            let mut count: u64 = 0;
             let mut line = String::new();
-            let mut out_file = if let Some(out_path) = config.out_file {
-                File::create(out_path).map(|f| Box::new(f) as Box<dyn Write>)?
+            let mut out_file: Box<dyn Write> = if let Some(out_path) = config.out_file {
+                Box::new(File::create(out_path)?)
             } else {
                 Box::new(io::stdout())
             };
+
+            let mut print = |count: u64, text: &str| -> MyResult<()> {
+                if count > 0 {
+                    write!(
+                        &mut out_file,
+                        "{}{}",
+                        if config.count {
+                            format!("{:>7} ", count)
+                        } else {
+                            "".to_string()
+                        },
+                        text
+                    )?;
+                }
+
+                Ok(())
+            };
+
             loop {
                 let bytes = f.read_line(&mut line)?;
                 if bytes == 0 {
                     break;
                 }
-                if line != prev_line {
-                    writeln!(
-                        &mut out_file,
-                        "{}{}",
-                        if config.count {
-                            format!(" {count}")
-                        } else {
-                            "".to_string()
-                        },
-                        prev_line
-                    )?;
-                    prev_line.clear();
-                    prev_line.push_str(&line);
+                if line.trim_end() != prev_line.trim_end() {
+                    print(count, &prev_line)?;
+                    prev_line = line.clone();
                     count = 0;
-                } else {
-                    count += 1;
                 }
+                count += 1;
+                line.clear();
             }
+
+            print(count, &prev_line)?;
         }
     }
     Ok(())

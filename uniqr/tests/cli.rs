@@ -104,7 +104,7 @@ fn dies_bad_file() -> TestResult {
 #[case(&[T3.input], T3.out)]
 #[case(&[T4.input], T4.out)]
 #[case(&[T5.input], T5.out)]
-#[case(&[T6.input], T6.out)]
+#[case(&[T6.input], T6. out)]
 #[case(&[ONE.input, "-c"], ONE.out_count)]
 #[case(&[TWO.input, "-c"], TWO.out_count)]
 #[case(&[THREE.input, "-c"], THREE.out_count)]
@@ -127,17 +127,17 @@ fn run(#[case] args: &[&str], #[case] expected_out: &str) -> TestResult {
 }
 
 #[rstest]
-#[case(&EMPTY, &[], EMPTY.out_count)]
-#[case(&ONE, &[], ONE.out_count)]
-#[case(&TWO, &[], TWO.out_count)]
-#[case(&THREE, &[], THREE.out_count)]
-#[case(&SKIP, &[], SKIP.out_count)]
-#[case(&T1, &[], T1.out_count)]
-#[case(&T2, &[], T2.out_count)]
-#[case(&T3, &[], T3.out_count)]
-#[case(&T4, &[], T4.out_count)]
-#[case(&T5, &[], T5.out_count)]
-#[case(&T6, &[], T6.out_count)]
+#[case(&EMPTY, &[], EMPTY.out)]
+#[case(&ONE, &[], ONE.out)]
+#[case(&TWO, &[], TWO.out)]
+#[case(&THREE, &[], THREE.out)]
+#[case(&SKIP, &[], SKIP.out)]
+#[case(&T1, &[], T1.out)]
+#[case(&T2, &[], T2.out)]
+#[case(&T3, &[], T3.out)]
+#[case(&T4, &[], T4.out)]
+#[case(&T5, &[], T5.out)]
+#[case(&T6, &[], T6.out)]
 #[case(&EMPTY, &["-c"], EMPTY.out_count)]
 #[case(&ONE, &["-c"], ONE.out_count)]
 #[case(&TWO, &["-c"], TWO.out_count)]
@@ -195,34 +195,38 @@ fn run_outfile(#[case] args: &[&str], #[case] expected_out: &str) -> TestResult 
         .args(args_copy)
         .assert()
         .success()
-        .stdout(expected);
+        .stdout("");
+
+    let contents = fs::read_to_string(&outpath)?;
+
+    assert_eq!(&expected, &contents);
 
     Ok(())
 }
 
 #[rstest]
-#[case(&EMPTY, &[], EMPTY.out_count)]
-#[case(&ONE, &[], ONE.out_count)]
-#[case(&TWO, &[], TWO.out_count)]
-#[case(&THREE, &[], THREE.out_count)]
-#[case(&SKIP, &[], SKIP.out_count)]
-#[case(&T1, &[], T1.out_count)]
-#[case(&T2, &[], T2.out_count)]
-#[case(&T3, &[], T3.out_count)]
-#[case(&T4, &[], T4.out_count)]
-#[case(&T5, &[], T5.out_count)]
-#[case(&T6, &[], T6.out_count)]
-#[case(&EMPTY, &["-c"], EMPTY.out_count)]
-#[case(&ONE, &["-c"], ONE.out_count)]
-#[case(&TWO, &["-c"], TWO.out_count)]
-#[case(&THREE, &["-c"], THREE.out_count)]
-#[case(&SKIP, &["-c"], SKIP.out_count)]
-#[case(&T1, &["-c"], T1.out_count)]
-#[case(&T2, &["-c"], T2.out_count)]
-#[case(&T3, &["-c"], T3.out_count)]
-#[case(&T4, &["-c"], T4.out_count)]
-#[case(&T5, &["-c"], T5.out_count)]
-#[case(&T6, &["-c"], T6.out_count)]
+#[case(&EMPTY, &["-"], EMPTY.out)]
+#[case(&ONE, &["-"], ONE.out)]
+#[case(&TWO, &["-"], TWO.out)]
+#[case(&THREE, &["-"], THREE.out)]
+#[case(&SKIP, &["-"], SKIP.out)]
+#[case(&T1, &["-"], T1.out)]
+#[case(&T2, &["-"], T2.out)]
+#[case(&T3, &["-"], T3.out)]
+#[case(&T4, &["-"], T4.out)]
+#[case(&T5, &["-"], T5.out)]
+#[case(&T6, &["-"], T6.out)]
+#[case(&EMPTY, &["-", "-c"], EMPTY.out_count)]
+#[case(&ONE, &["-", "-c"], ONE.out_count)]
+#[case(&TWO, &["-", "-c"], TWO.out_count)]
+#[case(&THREE, &["-", "-c"], THREE.out_count)]
+#[case(&SKIP, &["-", "-c"], SKIP.out_count)]
+#[case(&T1, &["-", "-c"], T1.out_count)]
+#[case(&T2, &["-", "-c"], T2.out_count)]
+#[case(&T3, &["-", "-c"], T3.out_count)]
+#[case(&T4, &["-", "-c"], T4.out_count)]
+#[case(&T5, &["-", "-c"], T5.out_count)]
+#[case(&T6, &["-", "-c"], T6.out_count)]
 fn run_stdin_outfile(
     #[case] test: &Test,
     #[case] args: &[&str],
@@ -239,7 +243,11 @@ fn run_stdin_outfile(
         .args(args_copy)
         .assert()
         .success()
-        .stdout(expected);
+        .stdout("");
+
+    let contents = fs::read_to_string(&outpath)?;
+
+    assert_eq!(&expected, &contents);
 
     Ok(())
 }
