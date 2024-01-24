@@ -1,8 +1,9 @@
-use clap::{Arg, Command};
+use clap::builder::PossibleValue;
+use clap::{Arg, Command, ValueEnum};
 use command_utils::{open, MyResult};
 use regex::Regex;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 enum EntryType {
     Dir,
     File,
@@ -45,14 +46,38 @@ pub fn get_args() -> MyResult<Config> {
                 .long("type")
                 .num_args(0..)
                 .value_parser(["f", "d", "l"])
+                // .default_value("f")
                 .action(clap::ArgAction::Append),
         )
         .get_matches();
 
+    let entry_types = matches
+        .get_many::<String>("type")
+        .map(|fs| {
+            fs.map(|f| match f.as_str() {
+                "d" => EntryType::Dir,
+                "f" => EntryType::File,
+                "l" => EntryType::Link,
+                _ => unreachable!("Invalid type"),
+            })
+            .collect()
+        })
+        .unwrap_or_default();
+
+    let mut names = vec![];
+    for res in matches.get_many::<String>("name") {
+        for re in res {
+            names.push(Regex::new(re)?);
+        }
+    }
     Ok(Config {
-        paths: vec![],
-        names: vec![],
-        entry_types: vec![],
+        paths: matches
+            .get_many::<String>("paths")
+            .unwrap()
+            .map(|f| f.to_owned())
+            .collect(),
+        names,
+        entry_types,
     })
 }
 
