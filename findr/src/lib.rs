@@ -1,11 +1,10 @@
-use command_utils::{MyResult, open};
+use command_utils::{open, MyResult};
 
-pub struct Config {
-
-}
+#[derive(Debug)]
+pub struct Config {}
 
 pub fn get_args() -> MyResult<Config> {
-    Ok(Config{})
+    Ok(Config {})
 }
 
 pub fn run(config: Config) -> MyResult<()> {
