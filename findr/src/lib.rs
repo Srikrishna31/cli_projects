@@ -1,5 +1,4 @@
-use clap::builder::PossibleValue;
-use clap::{Arg, Command, ValueEnum};
+use clap::{Arg, Command};
 use command_utils::{open, MyResult};
 use regex::Regex;
 
@@ -63,13 +62,6 @@ pub fn get_args() -> MyResult<Config> {
             .collect()
         })
         .unwrap_or_default();
-
-    // let mut names = vec![];
-    // for res in matches.get_many::<String>("name") {
-    //     for re in res {
-    //         names.push(Regex::new(re).map_err(|_| format!("Invalid --name \"{re}\""))?);
-    //     }
-    // }
 
     let names = matches
         .get_many::<String>("name")
