@@ -1,8 +1,7 @@
 use clap::{Arg, Command};
-use command_utils::{open, MyResult};
+use command_utils::MyResult;
 use regex::Regex;
-use std::io::{Error, ErrorKind};
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum EntryType {
@@ -85,26 +84,7 @@ pub fn get_args() -> MyResult<Config> {
     })
 }
 
-fn get_entry_type(entry: &DirEntry) -> MyResult<EntryType> {
-    let meta = entry.metadata()?;
-    //For now silently skip other file types.
-    let res = if meta.is_dir() {
-        EntryType::Dir
-    } else if meta.is_file() {
-        EntryType::File
-    } else if meta.is_symlink() {
-        EntryType::Link
-    } else {
-        return Err(
-            Box::try_from(Error::new(ErrorKind::Unsupported, "unsupported file type")).unwrap(),
-        );
-    };
-
-    Ok(res)
-}
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
-
     for path in config.paths {
         WalkDir::new(path)
             .into_iter()
@@ -114,47 +94,34 @@ pub fn run(config: Config) -> MyResult<()> {
                     false
                 }
                 Ok(entry) => {
-                    let et = get_entry_type(entry);
-                    config.entry_types.iter().any(|t| match &et {
-                        Err(e) => {
-                            eprintln!("{e}");
-                            false
-                        }
-                        Ok(en) => *t == *en,
-                    })
+                    config.entry_types.is_empty()
+                        || config.entry_types.iter().any(|t| match &t {
+                            EntryType::Dir => entry.file_type().is_dir(),
+                            EntryType::Link => entry.file_type().is_symlink(),
+                            EntryType::File => entry.file_type().is_file(),
+                        })
                 }
             })
             .filter(|en| match en {
-                Ok(en) => config.names.iter().any(|re| match en.file_name().to_str() {
-                    Some(f) => re.is_match(f),
-                    _ => {
-                        eprintln!("Couldnot convert filename to string: {:?}", en.file_name());
-                        false
-                    }
-                }),
+                Ok(en) => {
+                    config.names.is_empty()
+                        || config.names.iter().any(|re| match en.file_name().to_str() {
+                            Some(f) => re.is_match(f),
+                            _ => {
+                                eprintln!(
+                                    "Couldnot convert filename to string: {:?}",
+                                    en.file_name()
+                                );
+                                false
+                            }
+                        })
+                }
                 _ => unreachable!("Invalid code path"),
             })
             .for_each(|e| match e {
                 Ok(en) => println!("{}", en.path().display()),
                 _ => unreachable!("Invalid code path"),
             });
-
-        // for entry in WalkDir::new(path) {
-        //     match entry {
-        //         Err(e) => eprintln!("{e}"),
-        //         Ok(entry) => {
-        //             if &config.names.len() > &1usize {
-        //                 for regex in &config.names {
-        //                     if regex.is_match(entry.file_name().to_str().ok_or(Error::new(ErrorKind::Unsupported, format!("Couldnot convert filename to string {:?}", entry.file_name())))?) {
-        //                         println!("{}", entry.path().display())
-        //                     }
-        //                 }
-        //             } else {
-        //                 println!("{}", entry.path().display())
-        //             }
-        //         },
-        //     }
-        // }
     }
     Ok(())
 }

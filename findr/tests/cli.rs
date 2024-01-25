@@ -1,7 +1,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
-use std::{borrow::Cow, fs, path::Path};
+use std::{borrow::Cow, fs};
 use utils::{gen_bad_file, TestResult};
 
 const PRG: &str = "findr";
