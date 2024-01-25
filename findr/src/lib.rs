@@ -64,12 +64,22 @@ pub fn get_args() -> MyResult<Config> {
         })
         .unwrap_or_default();
 
-    let mut names = vec![];
-    for res in matches.get_many::<String>("name") {
-        for re in res {
-            names.push(Regex::new(re)?);
-        }
-    }
+    // let mut names = vec![];
+    // for res in matches.get_many::<String>("name") {
+    //     for re in res {
+    //         names.push(Regex::new(re).map_err(|_| format!("Invalid --name \"{re}\""))?);
+    //     }
+    // }
+
+    let names = matches
+        .get_many::<String>("name")
+        .map(|ns| {
+            ns.map(|n| Regex::new(n).map_err(|_| format!("Invalid --name \"{n}\"")))
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
+
     Ok(Config {
         paths: matches
             .get_many::<String>("paths")
