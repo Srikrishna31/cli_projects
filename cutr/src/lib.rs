@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{value_parser, Arg, Command};
 use command_utils::MyResult;
 use std::ops::Range;
 
@@ -50,7 +50,7 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Field delimiter")
                 .short('d')
                 .long("delim")
-                .num_args(0..1)
+                .num_args(0..)
                 .default_value("\t"),
         )
         .arg(
@@ -63,13 +63,28 @@ pub fn get_args() -> MyResult<Config> {
         )
         .get_matches();
 
+    let delimiter = {
+        let delimiter = matches.get_one::<String>("delim").unwrap();
+        if delimiter.len() != 1 {
+            return Err(From::from(format!(
+                "--delim \"{delimiter}\" must be a single byte"
+            )));
+        }
+        delimiter.as_bytes()[0]
+    };
+
     Ok(Config {
-        files: vec![],
-        delimiter: ',' as u8,
+        files: matches
+            .get_many::<String>("file")
+            .unwrap()
+            .map(|f| f.to_owned())
+            .collect(),
+        delimiter,
         extract: Extract::Fields(vec![0..1]),
     })
 }
 
 pub fn run(config: Config) -> MyResult<()> {
+    dbg!(&config);
     Ok(())
 }

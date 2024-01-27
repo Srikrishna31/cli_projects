@@ -15,7 +15,7 @@ fn skips_bad_file() -> TestResult {
     let bad = gen_bad_file();
     let expected = format!("{}: .* [(]os error 2[)]", bad);
     Command::cargo_bin(PRG)?
-        .args(&["-f", "1", CSV, &bad, TSV])
+        .args(&["-f", "1", "-d", ",", CSV, &bad, TSV])
         .assert()
         .success()
         .stderr(predicate::str::is_match(expected)?);
