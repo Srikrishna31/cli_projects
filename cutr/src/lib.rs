@@ -99,33 +99,33 @@ fn err_string(n: &str) -> String {
 }
 fn parse_range(range: &str) -> MyResult<ParsePos> {
     let parts: Vec<&str> = range.split('-').collect();
-    let parse_number = |n: &str, full: &str| {
-        if n.as_bytes()[0] as char == '+' {
-            return Err(From::from(err_string(full)));
+    let parse_number = |n: &str| {
+        if n.is_empty() || n.as_bytes()[0] as char == '+' {
+            return Err(From::from(err_string(n)));
         }
-        let res = n.parse::<usize>().map_err(|_| err_string(full))?;
+        let res = n.parse::<usize>().map_err(|_| err_string(n))?;
         if res == 0 {
-            return Err(From::from(err_string(full)));
+            return Err(From::from(err_string(n)));
         }
         Ok(ParsePos::Digit(res))
     };
 
     match parts.len() {
-        0 => Ok(parse_number(range, range)?),
-        1 => parse_number(parts[0], range),
+        0 => Ok(parse_number(range)?),
+        1 => parse_number(parts[0]),
         2 => {
-            let ParsePos::Digit(num1) = parse_number(parts[0], range)? else {
+            let ParsePos::Digit(num1) = parse_number(parts[0])? else {
                 unreachable!("Unreachable path")
             };
-            let ParsePos::Digit(num2) = parse_number(parts[1], range)? else {
+            let ParsePos::Digit(num2) = parse_number(parts[1])? else {
                 unreachable!("Unreachable path")
             };
             if num1 >= num2 {
-                return Err(From::from(
-                    "First number in range ({num1}) must be lower than second number ({num2})",
-                ));
+                return Err(From::from(format!(
+                    "First number in range ({num1}) must be lower than second number ({num2})"
+                )));
             }
-            Ok(ParsePos::Range(num1..num2))
+            Ok(ParsePos::Range(num1 - 1..num2))
         }
         _ => Err(From::from(
             "A range should be specified using only one '-'.",
@@ -163,9 +163,9 @@ mod unit_tests {
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"0\"",);
 
-        // let res = parse_pos("0-1");
-        // assert!(res.is_err());
-        // assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"0\"",);
+        let res = parse_pos("0-1");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"0\"",);
 
         // A leading "+" is an error
         let res = parse_pos("+1");
@@ -174,11 +174,11 @@ mod unit_tests {
 
         let res = parse_pos("+1-2");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1-2\"");
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+1\"");
 
         let res = parse_pos("1-+2");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-+2\"");
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"+2\"");
 
         // Any non-number is an error
         let res = parse_pos("a");
@@ -187,15 +187,15 @@ mod unit_tests {
 
         let res = parse_pos("1,a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1,a\"",);
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a\"",);
 
         let res = parse_pos("1-a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"1-a\"",);
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a\"",);
 
         let res = parse_pos("a-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a-1\"",);
+        assert_eq!(res.unwrap_err().to_string(), "illegal list value: \"a\"",);
 
         // Wonky ranges
         let res = parse_pos("-");
