@@ -1,7 +1,7 @@
 mod range_parser;
 
 use clap::{Arg, ArgMatches, Command};
-use command_utils::MyResult;
+use command_utils::{open, MyResult};
 use range_parser::parse_pos;
 use std::ops::Range;
 
@@ -29,7 +29,7 @@ pub fn get_args() -> MyResult<Config> {
                 .value_name("FILE")
                 .help("Input file(s)")
                 .default_value("-")
-                .num_args(0..),
+                .num_args(1..),
         )
         .arg(
             Arg::new("bytes")
@@ -50,15 +50,6 @@ pub fn get_args() -> MyResult<Config> {
                 .conflicts_with_all(&["bytes", "fields"]),
         )
         .arg(
-            Arg::new("delim")
-                .value_name("DELIMITER")
-                .help("Field delimiter")
-                .short('d')
-                .long("delim")
-                .num_args(0..)
-                .default_value("\t"),
-        )
-        .arg(
             Arg::new("fields")
                 .value_name("FIELDS")
                 .help("Selected fields")
@@ -67,16 +58,27 @@ pub fn get_args() -> MyResult<Config> {
                 .num_args(0..)
                 .conflicts_with_all(&["chars", "bytes"]),
         )
+        .arg(
+            Arg::new("delim")
+                .value_name("DELIMITER")
+                .help("Field delimiter")
+                .short('d')
+                .long("delim")
+                .num_args(1)
+                .default_value("\t"),
+        )
         .get_matches();
 
+    let delimiter = extract_delimiter(&matches)?;
+    let extract = extract_fields_bytes_or_chars(&matches)?;
     Ok(Config {
         files: matches
             .get_many::<String>("file")
             .unwrap()
             .map(|f| f.to_owned())
             .collect(),
-        delimiter: extract_delimiter(&matches)?,
-        extract: extract_fields_bytes_or_chars(&matches)?,
+        delimiter,
+        extract,
     })
 }
 
@@ -117,5 +119,11 @@ fn extract_delimiter(matches: &ArgMatches) -> MyResult<u8> {
 
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(&config);
+    for filename in config.files {
+        match open(&filename) {
+            Err(e) => eprintln!("{filename}: {e}"),
+            Ok(_) => println!("Opened {filename}"),
+        }
+    }
     Ok(())
 }
