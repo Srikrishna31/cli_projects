@@ -1,6 +1,6 @@
 mod range_parser;
 
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 use command_utils::MyResult;
 use range_parser::parse_pos;
 use std::ops::Range;
@@ -37,7 +37,8 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Selected bytes")
                 .short('b')
                 .long("bytes")
-                .num_args(0..),
+                .num_args(0..)
+                .conflicts_with_all(&["chars", "fields"]),
         )
         .arg(
             Arg::new("chars")
@@ -45,7 +46,8 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Selected characters")
                 .short('c')
                 .long("chars")
-                .num_args(0..),
+                .num_args(0..)
+                .conflicts_with_all(&["bytes", "fields"]),
         )
         .arg(
             Arg::new("delim")
@@ -62,19 +64,10 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Selected fields")
                 .short('f')
                 .long("fields")
-                .num_args(0..),
+                .num_args(0..)
+                .conflicts_with_all(&["chars", "bytes"]),
         )
         .get_matches();
-
-    let delimiter = {
-        let delimiter = matches.get_one::<String>("delim").unwrap();
-        if delimiter.len() != 1 {
-            return Err(From::from(format!(
-                "--delim \"{delimiter}\" must be a single byte"
-            )));
-        }
-        delimiter.as_bytes()[0]
-    };
 
     Ok(Config {
         files: matches
@@ -82,9 +75,44 @@ pub fn get_args() -> MyResult<Config> {
             .unwrap()
             .map(|f| f.to_owned())
             .collect(),
-        delimiter,
-        extract: Extract::Fields(vec![0..1]),
+        delimiter: extract_delimiter(&matches)?,
+        extract: extract_fields_bytes_or_chars(&matches)?,
     })
+}
+
+fn extract_fields_bytes_or_chars(matches: &ArgMatches) -> MyResult<Extract> {
+    let fields = matches.get_one::<String>("fields");
+    let bytes = matches.get_one::<String>("bytes");
+    let chars = matches.get_one::<String>("chars");
+
+    if fields.is_none() && bytes.is_none() && chars.is_none() {
+        return Err(From::from("Must have --fields, --bytes, or --chars"));
+    }
+
+    let extract = if fields.is_some() && bytes.is_none() && chars.is_none() {
+        Extract::Fields(parse_pos(fields.unwrap())?)
+    } else if fields.is_none() && bytes.is_some() && chars.is_none() {
+        Extract::Bytes(parse_pos(bytes.unwrap())?)
+    } else if fields.is_none() && bytes.is_none() && chars.is_some() {
+        Extract::Chars(parse_pos(chars.unwrap())?)
+    } else {
+        return Err(From::from(
+            "Only one option of --fields, --bytes, or --chars is accepted",
+        ));
+    };
+
+    Ok(extract)
+}
+
+#[inline]
+fn extract_delimiter(matches: &ArgMatches) -> MyResult<u8> {
+    let delimiter = matches.get_one::<String>("delim").unwrap();
+    if delimiter.len() != 1 {
+        return Err(From::from(format!(
+            "--delim \"{delimiter}\" must be a single byte"
+        )));
+    }
+    Ok(delimiter.as_bytes()[0])
 }
 
 pub fn run(config: Config) -> MyResult<()> {
