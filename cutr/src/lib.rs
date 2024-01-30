@@ -1,10 +1,12 @@
 mod data_extractor;
 mod range_parser;
 
-use crate::data_extractor::{extract_bytes, extract_chars};
+use crate::data_extractor::{extract_bytes, extract_chars, extract_fields};
 use clap::{Arg, ArgMatches, Command};
 use command_utils::{open, MyResult};
+use csv::{ReaderBuilder, StringRecord};
 use range_parser::parse_pos;
+use std::fs::File;
 use std::io::BufRead;
 use std::ops::Range;
 
@@ -120,23 +122,60 @@ fn parse_delimiter(matches: &ArgMatches) -> MyResult<u8> {
     Ok(delimiter.as_bytes()[0])
 }
 
+#[inline]
+fn fmt(rec: &Vec<String>) -> String {
+    rec.join(",")
+    // rec.into_iter().map(|i| format!("{:20}", i)).collect()
+}
+
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
+    fn extract_fields_dummy(_: &str, _: &[Range<usize>]) -> String {
+        "".to_string()
+    }
+    // dbg!(&config);
+    let extract = match &config.extract {
+        Extract::Chars(_) => extract_chars,
+        Extract::Bytes(_) => extract_bytes,
+        Extract::Fields(_) => extract_fields_dummy,
+    };
+
     for filename in config.files {
-        match open(&filename) {
-            Err(e) => eprintln!("{filename}: {e}"),
-            Ok(f) => {
-                for line in f.lines() {
-                    let line = line?;
-                    let res = match &config.extract {
-                        Extract::Chars(pos_list) => extract_chars(&line, &pos_list),
-                        Extract::Bytes(pos_list) => extract_bytes(&line, &pos_list),
-                        Extract::Fields(_) => "".to_string(),
-                    };
-                    println!("{res}");
+        match &config.extract {
+            Extract::Chars(l) | Extract::Bytes(l) => match open(&filename) {
+                Err(e) => eprintln!("{filename}: {e}"),
+                Ok(f) => {
+                    for line in f.lines() {
+                        let line = line?;
+                        println!("{}", extract(&line, l));
+                    }
+                }
+            },
+            Extract::Fields(l) => {
+                let mut reader = ReaderBuilder::new()
+                    .delimiter(config.delimiter)
+                    .from_reader(File::open(filename)?);
+
+                println!("{}", fmt(&extract_fields(reader.headers()?, &l)));
+                for record in reader.records() {
+                    let record = record?;
+                    println!("{}", fmt(&extract_fields(&record, &l)));
                 }
             }
         }
+        // match open(&filename) {
+        //     Err(e) => eprintln!("{filename}: {e}"),
+        //     Ok(f) => {
+        //         for line in f.lines() {
+        //             let line = line?;
+        //             let res = match &config.extract {
+        //                 Extract::Chars(pos_list) => extract_chars(&line, &pos_list),
+        //                 Extract::Bytes(pos_list) => extract_bytes(&line, &pos_list),
+        //                 Extract::Fields(_) => "".to_string(),
+        //             };
+        //             println!("{res}");
+        //         }
+        //     }
+        // }
     }
     Ok(())
 }
