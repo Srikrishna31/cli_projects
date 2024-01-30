@@ -1,0 +1,18 @@
+[package]
+name = "grepr"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "4"
+regex = "1"
+walkdir = "2"
+sys-info = "0.9"
+command_utils = {path="../command_utils"}
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+utils = {path="../utils"}
