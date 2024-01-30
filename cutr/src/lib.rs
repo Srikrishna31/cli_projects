@@ -123,29 +123,21 @@ fn parse_delimiter(matches: &ArgMatches) -> MyResult<u8> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    fn extract_fields_dummy(_: &str, _: &[Range<usize>]) -> String {
-        "".to_string()
-    }
-    let extract = match &config.extract {
-        Extract::Chars(_) => extract_chars,
-        Extract::Bytes(_) => extract_bytes,
-        Extract::Fields(_) => extract_fields_dummy,
-    };
-
     for filename in config.files {
-        match &config.extract {
-            Extract::Chars(l) | Extract::Bytes(l) => match open(&filename) {
-                Err(e) => eprintln!("{filename}: {e}"),
-                Ok(f) => {
+        match open(&filename) {
+            Err(e) => eprintln!("{filename}: {e}"),
+            Ok(f) => match &config.extract {
+                Extract::Chars(char_pos) => {
                     for line in f.lines() {
-                        let line = line?;
-                        println!("{}", extract(&line, l));
+                        println!("{}", extract_chars(&line?, char_pos));
                     }
                 }
-            },
-            Extract::Fields(l) => match open(&filename) {
-                Err(e) => eprintln!("{filename}: {e}"),
-                Ok(f) => {
+                Extract::Bytes(byte_pos) => {
+                    for line in f.lines() {
+                        println!("{}", extract_bytes(&line?, byte_pos));
+                    }
+                }
+                Extract::Fields(field_pos) => {
                     let mut reader = ReaderBuilder::new()
                         .delimiter(config.delimiter)
                         .from_reader(f);
@@ -154,10 +146,10 @@ pub fn run(config: Config) -> MyResult<()> {
                         .delimiter(config.delimiter)
                         .from_writer(io::stdout());
 
-                    writer.write_record(extract_fields(reader.headers()?, l))?;
+                    writer.write_record(extract_fields(reader.headers()?, field_pos))?;
                     for record in reader.records() {
                         let record = record?;
-                        writer.write_record(extract_fields(&record, l))?;
+                        writer.write_record(extract_fields(&record, field_pos))?;
                     }
                 }
             },
