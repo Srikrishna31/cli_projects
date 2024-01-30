@@ -72,10 +72,8 @@ fn dies_bad_string(#[case] args: &[&str]) -> TestResult {
 #[case(&[TSV, "-b", "2-3"], "tests/expected/movies1.tsv.b2-3.out")]
 #[case(&[TSV, "-c", "1"], "tests/expected/movies1.tsv.c1.out")]
 #[case(&[TSV, "-c", "2"], "tests/expected/movies1.tsv.c2.out")]
-#[case(&[TSV, "-c", "8"], "tests/expected/movies1.tsv.c8.out")]
 #[case(&[TSV, "-c", "1-2"], "tests/expected/movies1.tsv.c1-2.out")]
 #[case(&[TSV, "-c", "2-3"], "tests/expected/movies1.tsv.c2-3.out")]
-#[case(&[TSV, "-c", "1-8"], "tests/expected/movies1.tsv.c1-8.out")]
 #[case(&[BOOKS, "-c", "1,1"], "tests/expected/books.c1,1.out")]
 fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
     println!("expected {expected_file}");
@@ -92,6 +90,8 @@ fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
 #[rstest]
 #[case(&[TSV, "-b", "8"], "tests/expected/movies1.tsv.b8.out")]
 #[case(&[TSV, "-b", "1-8"], "tests/expected/movies1.tsv.b1-8.out")]
+#[case(&[TSV, "-c", "8"], "tests/expected/movies1.tsv.c8.out")]
+#[case(&[TSV, "-c", "1-8"], "tests/expected/movies1.tsv.c1-8.out")]
 fn run_lossy(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
     let contents = fs::read(expected_file)?;
     let expected = String::from_utf8_lossy(&contents);

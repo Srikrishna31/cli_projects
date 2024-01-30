@@ -9,7 +9,7 @@ pub(super) fn extract_chars(line: &str, char_pos: &[Range<usize>]) -> String {
                 .chars()
                 .enumerate()
                 .filter(|(i, _)| i >= &r.start)
-                .take_while(|(i, c)| i < &r.end)
+                .take_while(|(i, _)| i < &r.end)
                 .map(|(_, c)| c)
                 .collect::<String>()),
         );
@@ -27,7 +27,7 @@ pub(super) fn extract_bytes(line: &str, byte_pos: &[Range<usize>]) -> String {
                 .iter()
                 .enumerate()
                 .filter(|(i, _)| i >= &r.start)
-                .take_while(|(i, c)| i < &r.end)
+                .take_while(|(i, _)| i < &r.end)
                 .map(|(_, c)| *c)
                 .collect::<Vec<u8>>(),
         );
@@ -43,7 +43,7 @@ pub(super) fn extract_fields(line: &StringRecord, field_pos: &[Range<usize>]) ->
             .iter()
             .enumerate()
             .filter(|(i, _)| i >= &r.start)
-            .take_while(|(i, c)| i < &r.end)
+            .take_while(|(i, _)| i < &r.end)
             .map(|(_, s)| s.to_string())
             .filter(|s| !s.is_empty())
             .collect();
