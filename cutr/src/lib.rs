@@ -1,8 +1,11 @@
+mod data_extractor;
 mod range_parser;
 
+use crate::data_extractor::{extract_bytes, extract_chars};
 use clap::{Arg, ArgMatches, Command};
 use command_utils::{open, MyResult};
 use range_parser::parse_pos;
+use std::io::BufRead;
 use std::ops::Range;
 
 type PositionList = Vec<Range<usize>>;
@@ -69,8 +72,8 @@ pub fn get_args() -> MyResult<Config> {
         )
         .get_matches();
 
-    let delimiter = extract_delimiter(&matches)?;
-    let extract = extract_fields_bytes_or_chars(&matches)?;
+    let delimiter = parse_delimiter(&matches)?;
+    let extract = parse_fields_bytes_or_chars(&matches)?;
     Ok(Config {
         files: matches
             .get_many::<String>("file")
@@ -82,7 +85,7 @@ pub fn get_args() -> MyResult<Config> {
     })
 }
 
-fn extract_fields_bytes_or_chars(matches: &ArgMatches) -> MyResult<Extract> {
+fn parse_fields_bytes_or_chars(matches: &ArgMatches) -> MyResult<Extract> {
     let fields = matches.get_one::<String>("fields");
     let bytes = matches.get_one::<String>("bytes");
     let chars = matches.get_one::<String>("chars");
@@ -107,7 +110,7 @@ fn extract_fields_bytes_or_chars(matches: &ArgMatches) -> MyResult<Extract> {
 }
 
 #[inline]
-fn extract_delimiter(matches: &ArgMatches) -> MyResult<u8> {
+fn parse_delimiter(matches: &ArgMatches) -> MyResult<u8> {
     let delimiter = matches.get_one::<String>("delim").unwrap();
     if delimiter.len() != 1 {
         return Err(From::from(format!(
@@ -122,7 +125,17 @@ pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
         match open(&filename) {
             Err(e) => eprintln!("{filename}: {e}"),
-            Ok(_) => println!("Opened {filename}"),
+            Ok(f) => {
+                for line in f.lines() {
+                    let line = line?;
+                    let res = match &config.extract {
+                        Extract::Chars(pos_list) => extract_chars(&line, &pos_list),
+                        Extract::Bytes(pos_list) => extract_bytes(&line, &pos_list),
+                        Extract::Fields(_) => "".to_string(),
+                    };
+                    println!("{res}");
+                }
+            }
         }
     }
     Ok(())
