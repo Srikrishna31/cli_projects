@@ -36,24 +36,15 @@ pub(super) fn extract_bytes(line: &str, byte_pos: &[Range<usize>]) -> String {
     String::from_utf8_lossy(&res).to_string()
 }
 
-pub(super) fn extract_fields(line: &StringRecord, field_pos: &[Range<usize>]) -> Vec<String> {
-    let mut res: Vec<String> = vec![];
-    for r in field_pos {
-        let mut lres: Vec<_> = line
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| i >= &r.start)
-            .take_while(|(i, _)| i < &r.end)
-            .map(|(_, s)| s.to_string())
-            .filter(|s| !s.is_empty())
-            .collect();
-
-        if !lres.is_empty() {
-            res.append(&mut lres);
-        }
-    }
-
-    res
+pub(super) fn extract_fields<'a>(
+    line: &'a StringRecord,
+    field_pos: &[Range<usize>],
+) -> Vec<&'a str> {
+    field_pos
+        .iter()
+        .cloned()
+        .flat_map(|range| range.filter_map(|i| line.get(i)))
+        .collect()
 }
 #[cfg(test)]
 mod unit_tests {
