@@ -1,11 +1,12 @@
 mod data_extractor;
 mod range_parser;
 
-use crate::data_extractor::{extract_bytes, extract_chars, extract_fields};
 use clap::{Arg, ArgMatches, Command};
 use command_utils::{open, MyResult};
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, WriterBuilder};
+use data_extractor::{extract_bytes, extract_chars, extract_fields};
 use range_parser::parse_pos;
+use std::io;
 use std::io::BufRead;
 use std::ops::Range;
 
@@ -121,17 +122,10 @@ fn parse_delimiter(matches: &ArgMatches) -> MyResult<u8> {
     Ok(delimiter.as_bytes()[0])
 }
 
-#[inline]
-fn fmt(rec: &[String], delimiter: &str) -> String {
-    rec.join(delimiter)
-    // rec.into_iter().map(|i| format!("{:20}", i)).collect()
-}
-
 pub fn run(config: Config) -> MyResult<()> {
     fn extract_fields_dummy(_: &str, _: &[Range<usize>]) -> String {
         "".to_string()
     }
-    // dbg!(&config);
     let extract = match &config.extract {
         Extract::Chars(_) => extract_chars,
         Extract::Bytes(_) => extract_bytes,
@@ -152,19 +146,18 @@ pub fn run(config: Config) -> MyResult<()> {
             Extract::Fields(l) => match open(&filename) {
                 Err(e) => eprintln!("{filename}: {e}"),
                 Ok(f) => {
-                    let t = [config.delimiter];
-                    let print_delim = std::str::from_utf8(&t)?;
                     let mut reader = ReaderBuilder::new()
                         .delimiter(config.delimiter)
                         .from_reader(f);
 
-                    println!(
-                        "{}",
-                        fmt(&extract_fields(reader.headers()?, l), print_delim)
-                    );
+                    let mut writer = WriterBuilder::new()
+                        .delimiter(config.delimiter)
+                        .from_writer(io::stdout());
+
+                    writer.write_record(extract_fields(reader.headers()?, l))?;
                     for record in reader.records() {
                         let record = record?;
-                        println!("{}", fmt(&extract_fields(&record, l), print_delim));
+                        writer.write_record(extract_fields(&record, l))?;
                     }
                 }
             },
