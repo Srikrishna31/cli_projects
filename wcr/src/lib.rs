@@ -169,7 +169,7 @@ fn count(mut file: impl BufRead) -> MyResult<FileInfo> {
             }
             Err(e) => {
                 num_lines += 1;
-                num_bytes += buf.bytes().count();
+                num_bytes += buf.len();
                 num_words += buf.split_whitespace().count();
                 num_chars += buf.chars().count();
                 eprintln!("{e}");
