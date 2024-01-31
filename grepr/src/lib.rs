@@ -16,6 +16,47 @@ pub fn get_args() -> MyResult<Config> {
         .version("0.1.0")
         .author("Krishna Addepalli <coolkrishna31@gmail.com>")
         .about("Rust grep")
+        .arg(
+            Arg::new("pattern")
+                .value_name("PATTERN")
+                .help("Pattern to search for")
+                .num_args(1),
+        )
+        .arg(
+            Arg::new("files")
+                .value_name("FILE")
+                .help("Input file(s) separated by spaces")
+                .num_args(0..)
+                .default_value("-"),
+        )
+        .arg(
+            Arg::new("count")
+                .help("Count occurrences")
+                .short('c')
+                .long("count")
+                .num_args(0..=1),
+        )
+        .arg(
+            Arg::new("invert_match")
+                .help("Invert match")
+                .short('v')
+                .long("invert-match")
+                .num_args(0..=1),
+        )
+        .arg(
+            Arg::new("recursive")
+                .help("Recursive search")
+                .short('r')
+                .long("recursive")
+                .num_args(0..=1),
+        )
+        .arg(
+            Arg::new("insensitive")
+                .help("Case insensitive search")
+                .short('i')
+                .long("insensitive")
+                .num_args(0..=1),
+        )
         .get_matches();
 
     Ok(Config {
