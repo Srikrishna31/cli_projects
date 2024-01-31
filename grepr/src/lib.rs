@@ -1,6 +1,6 @@
-use clap::{Command, Arg};
+use clap::{Arg, Command};
+use command_utils::{open, MyResult};
 use regex::{Regex, RegexBuilder};
-use command_utils::{MyResult, open};
 
 #[derive(Debug)]
 pub struct Config {
@@ -17,8 +17,8 @@ pub fn get_args() -> MyResult<Config> {
         .author("Krishna Addepalli <coolkrishna31@gmail.com>")
         .about("Rust grep")
         .get_matches();
-    
-    Ok(Config{
+
+    Ok(Config {
         pattern: Regex::new("")?,
         files: vec![],
         recursive: false,
