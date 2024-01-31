@@ -14,7 +14,7 @@ const NOBODY: &str = "tests/inputs/nobody.txt";
 const INPUTS_DIR: &str = "tests/inputs";
 
 #[rstest]
-#[case(&[], "USAGE")]
+#[case(&[], "Usage")]
 #[case(&["*foo", FOX], "Invalid pattern \"*foo\"")]
 fn dies(#[case] args: &[&str], #[case] expected: &str) -> TestResult {
     Command::cargo_bin(PRG)?
