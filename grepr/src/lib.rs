@@ -142,16 +142,28 @@ fn find_files<'a>(
                     }
                 } else {
                     let p = p.to_str().unwrap();
-                    open(p).map(|_| String::from(p)).map_err(|e| From::from(format!("{p}: {e}")))
+                    open(p)
+                        .map(|_| String::from(p))
+                        .map_err(|e| From::from(format!("{p}: {e}")))
                 }
             })
         }))
     }
 }
 
+fn find_lines<T: BufRead>(
+    mut file: T,
+    pattern: &Regex,
+    invert_match: bool,
+) -> MyResult<Vec<String>> {
+    unimplemented!();
+}
+
 #[cfg(test)]
 mod tests {
-    use super::find_files;
+    use super::{find_files, find_lines};
+    use regex::{Regex, RegexBuilder};
+    use std::io::Cursor;
     use utils::random_string;
 
     #[test]
@@ -199,5 +211,37 @@ mod tests {
 
         assert_eq!(files.len(), 1);
         assert!(files[0].is_err());
+    }
+
+    #[test]
+    fn test_find_lines() {
+        let text = b"Lorem\nIpsum\r\nDOLOR";
+
+        // The pattern _or_ should match the one line, "Lorem"
+        let re1 = Regex::new("or").unwrap();
+        let matches = find_lines(Cursor::new(&text[..]), &re1, false);
+        assert!(matches.is_ok());
+        assert_eq!(matches.unwrap(), vec!["Lorem"]);
+
+        // When inverted, the function should match the other two lines
+        let matches = find_lines(Cursor::new(&text[..]), &re1, true);
+        assert!(matches.is_ok());
+        assert_eq!(matches.unwrap(), vec!["Ipsum", "DOLOR"]);
+
+        // This regex will be case-insensitive
+        let re2 = RegexBuilder::new("or")
+            .case_insensitive(true)
+            .build()
+            .unwrap();
+
+        // The two lines "Lorem" and "DOLOR" should match
+        let matches = find_lines(Cursor::new(&text), &re2, false);
+        assert!(matches.is_ok());
+        assert_eq!(matches.unwrap(), vec!["Lorem", "DOLOR"]);
+
+        // When inverted, the one remaining line should match
+        let matches = find_lines(Cursor::new(&text), &re2, true);
+        assert!(matches.is_ok());
+        assert_eq!(matches.unwrap(), vec!["Ipsum"]);
     }
 }
