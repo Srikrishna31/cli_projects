@@ -2,6 +2,7 @@ use clap::{Arg, Command};
 use command_utils::{open, MyResult};
 use regex::{Regex, RegexBuilder};
 use std::fmt::Debug;
+use std::io::BufRead;
 
 #[derive(Debug)]
 pub struct Config {
@@ -81,7 +82,27 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    dbg!(&config);
+    let entries = find_files(&config.files, config.recursive);
+    for entry in entries {
+        match entry {
+            Err(e) => eprintln!("{e}"),
+            Ok(f) => {
+                let file = open(&f)?;
+                let mut count = 0;
+                for line in file.lines() {
+                    let line = line?;
+                    if config.pattern.is_match(&line) != config.invert_match {
+                        count += 1;
+                        println!("{}", line);
+                    }
+                }
+                if config.count {
+                    println!("{}: {}", f, count);
+                }
+            }
+        }
+    }
     Ok(())
 }
 
@@ -89,22 +110,41 @@ fn find_files<'a>(
     paths: &'a [String],
     recursive: bool,
 ) -> Box<dyn Iterator<Item = MyResult<String>> + 'a> {
+    // I have to use Box::new twice here since the types from each branch of if are different.
+    // Wrapping in box ensures that the type is unified and the function signature is satisfied.
     if recursive {
         Box::new(paths.iter().flat_map(|p| {
             walkdir::WalkDir::new(p)
                 .into_iter()
-                .filter_map(|e| e.ok())
+                .filter_map(|e| {
+                    if e.is_err() {
+                        eprintln!("{}", &e.unwrap_err());
+                        return None;
+                    }
+                    e.ok()
+                })
                 .filter(|e| e.file_type().is_file())
                 .map(|e| Ok(e.path().to_string_lossy().to_string()))
                 .into_iter()
         }))
     } else {
         Box::new(paths.iter().map(|p| {
-            if std::path::Path::new(p).is_file() {
-                Ok(p.to_string())
-            } else {
-                Err(From::from(format!("{p} is a directory")))
-            }
+            let p = std::path::Path::new(p);
+            p.try_exists().map_err(|e| From::from(e)).and_then(|b| {
+                if b {
+                    if p.is_file() {
+                        Ok(String::from(p.to_str().unwrap()))
+                    } else {
+                        Err(From::from(format!(
+                            "{} is a directory",
+                            p.to_str().unwrap()
+                        )))
+                    }
+                } else {
+                    let p = p.to_str().unwrap();
+                    open(p).map(|_| String::from(p)).map_err(|e| From::from(format!("{p}: {e}")))
+                }
+            })
         }))
     }
 }
@@ -112,7 +152,7 @@ fn find_files<'a>(
 #[cfg(test)]
 mod tests {
     use super::find_files;
-    use utils::{gen_bad_file, random_string};
+    use utils::random_string;
 
     #[test]
     fn test_find_files() {
