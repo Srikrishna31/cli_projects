@@ -82,23 +82,17 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
     let entries = find_files(&config.files, config.recursive);
     for entry in entries {
         match entry {
             Err(e) => eprintln!("{e}"),
             Ok(f) => {
                 let file = open(&f)?;
-                let mut count = 0;
-                for line in file.lines() {
-                    let line = line?;
-                    if config.pattern.is_match(&line) != config.invert_match {
-                        count += 1;
-                        println!("{}", line);
-                    }
-                }
+                let lines = find_lines(file, &config.pattern, config.invert_match);
                 if config.count {
-                    println!("{}: {}", f, count);
+                    println!("{f}:{}", lines.count());
+                } else {
+                    lines.for_each(|l| println!("{}: {}", f, l));
                 }
             }
         }
