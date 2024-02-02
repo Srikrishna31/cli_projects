@@ -151,12 +151,15 @@ fn find_files<'a>(
     }
 }
 
-fn find_lines<T: BufRead>(
-    mut file: T,
-    pattern: &Regex,
+fn find_lines<'a, T: BufRead + 'a>(
+    file: T,
+    pattern: &'a Regex,
     invert_match: bool,
-) -> MyResult<Vec<String>> {
-    unimplemented!();
+) -> Box<dyn Iterator<Item = String> + 'a> {
+    Box::new(file.lines().into_iter().filter_map(move |line| match line {
+        Ok(l) if pattern.is_match(&l) != invert_match => Some(l),
+        _ => None,
+    }))
 }
 
 #[cfg(test)]
@@ -219,14 +222,14 @@ mod tests {
 
         // The pattern _or_ should match the one line, "Lorem"
         let re1 = Regex::new("or").unwrap();
-        let matches = find_lines(Cursor::new(&text[..]), &re1, false);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap(), vec!["Lorem"]);
+        let mut file = Cursor::new(&text);
+        let matches = find_lines(&mut file, &re1, false);
+        assert_eq!(matches.collect::<Vec<String>>(), vec!["Lorem"]);
 
         // When inverted, the function should match the other two lines
-        let matches = find_lines(Cursor::new(&text[..]), &re1, true);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap(), vec!["Ipsum", "DOLOR"]);
+        let mut file = Cursor::new(&text);
+        let matches = find_lines(&mut file, &re1, true);
+        assert_eq!(matches.collect::<Vec<String>>(), vec!["Ipsum", "DOLOR"]);
 
         // This regex will be case-insensitive
         let re2 = RegexBuilder::new("or")
@@ -235,13 +238,13 @@ mod tests {
             .unwrap();
 
         // The two lines "Lorem" and "DOLOR" should match
-        let matches = find_lines(Cursor::new(&text), &re2, false);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap(), vec!["Lorem", "DOLOR"]);
+        let mut file = Cursor::new(&text);
+        let matches = find_lines(&mut file, &re2, false);
+        assert_eq!(matches.collect::<Vec<String>>(), vec!["Lorem", "DOLOR"]);
 
         // When inverted, the one remaining line should match
-        let matches = find_lines(Cursor::new(&text), &re2, true);
-        assert!(matches.is_ok());
-        assert_eq!(matches.unwrap(), vec!["Ipsum"]);
+        let mut file = Cursor::new(&text);
+        let matches = find_lines(&mut file, &re2, true);
+        assert_eq!(matches.collect::<Vec<String>>(), vec!["Ipsum"]);
     }
 }
