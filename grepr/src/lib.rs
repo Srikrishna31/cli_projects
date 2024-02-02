@@ -1,9 +1,7 @@
-use clap::builder::TypedValueParser;
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
 use regex::{Regex, RegexBuilder};
 use std::fmt::Debug;
-use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Config {
@@ -85,4 +83,81 @@ pub fn get_args() -> MyResult<Config> {
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(config);
     Ok(())
+}
+
+fn find_files<'a>(
+    paths: &'a [String],
+    recursive: bool,
+) -> Box<dyn Iterator<Item = MyResult<String>> + 'a> {
+    if recursive {
+        Box::new(paths.iter().flat_map(|p| {
+            walkdir::WalkDir::new(p)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_type().is_file())
+                .map(|e| Ok(e.path().to_string_lossy().to_string()))
+                .into_iter()
+        }))
+    } else {
+        Box::new(paths.iter().map(|p| {
+            if std::path::Path::new(p).is_file() {
+                Ok(p.to_string())
+            } else {
+                Err(From::from(format!("{p} is a directory")))
+            }
+        }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::find_files;
+    use utils::{gen_bad_file, random_string};
+
+    #[test]
+    fn test_find_files() {
+        // Verify that the function finds a file known to exist
+        let paths = &["./tests/inputs/fox.txt".to_string()];
+        let files = find_files(paths, false).collect::<Vec<_>>();
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].as_ref().unwrap(), "./tests/inputs/fox.txt");
+
+        // The function should reject a directory without the recursive option
+        let paths = &["./tests/inputs".to_string()];
+        let files = find_files(paths, false).collect::<Vec<_>>();
+
+        assert_eq!(files.len(), 1);
+        if let Err(e) = &files[0] {
+            assert_eq!(e.to_string(), "./tests/inputs is a directory");
+        }
+
+        // Verify the function recursively finds files in a directory
+        let paths = &["./tests/inputs".to_string()];
+        let res = find_files(paths, true);
+
+        let mut files = res
+            .map(|f| f.as_ref().unwrap().replace("\\", "/"))
+            .collect::<Vec<String>>();
+        files.sort();
+        assert_eq!(files.len(), 4);
+        assert_eq!(
+            files,
+            vec![
+                "./tests/inputs/bustle.txt",
+                "./tests/inputs/empty.txt",
+                "./tests/inputs/fox.txt",
+                "./tests/inputs/nobody.txt"
+            ]
+        );
+
+        // Generate a random string to represent a nonexistent file
+        let bad: String = random_string(None);
+
+        // Verify that the function returns the bad file as an error
+        let files = find_files(&[bad], false).collect::<Vec<_>>();
+
+        assert_eq!(files.len(), 1);
+        assert!(files[0].is_err());
+    }
 }
