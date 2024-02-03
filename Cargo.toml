@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "catr",
     "command_utils",
+    "commr",
     "cutr",
     "echor",
     "findr",
