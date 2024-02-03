@@ -21,9 +21,8 @@ fn dies_no_args() -> TestResult {
 }
 
 #[rstest]
-#[case(&[FILE1], &gen_bad_file(), ".* [(]os error 2[)]", true)]
-#[case(&[FILE2], &gen_bad_file(), ".* [(]os error 2[)]", false)]
-#[case(&["-"], "-", "Both input files cannot be STDIN (\"-\")", true)]
+#[case(&[FILE1], &gen_bad_file(), "[(]os error 2[)]", true)]
+#[case(&[FILE2], &gen_bad_file(), "[(]os error 2[)]", false)]
 fn dies(
     #[case] args: &[&str],
     #[case] bad: &str,
@@ -35,13 +34,25 @@ fn dies(
     } else {
         [&[bad], args].concat()
     };
-    let expected = format!("{bad} {expected}");
+    let expected = format!("{bad}: .* {expected}");
+
     Command::cargo_bin(PRG)?
         .args(&new_args)
         .assert()
         .failure()
-        .stderr(predicate::str::contains(expected));
+        .stderr(predicate::str::is_match(expected)?);
 
+    Ok(())
+}
+
+#[test]
+fn dies_both_stdin() -> TestResult {
+    let expected = "Both input files cannot be STDIN (\"-\")";
+    Command::cargo_bin(PRG)?
+        .args(&["-", "-"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(expected));
     Ok(())
 }
 

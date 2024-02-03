@@ -12,6 +12,8 @@ pub type MyResult<T> = Result<T, Box<dyn Error>>;
 pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     match filename {
         "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+        _ => Ok(Box::new(BufReader::new(
+            File::open(filename).map_err(|e| format!("{filename}: {e}"))?,
+        ))),
     }
 }

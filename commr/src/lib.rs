@@ -79,6 +79,17 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    // dbg!(&config);
+    let file1 = &config.file1;
+    let file2 = &config.file2;
+
+    if file1 == "-" && file2 == "-" {
+        return Err(From::from("Both input files cannot be STDIN (\"-\")"));
+    }
+
+    let _file1 = open(file1)?;
+    let _file2 = open(file2)?;
+    println!("Opened {} and {}", file1, file2);
+
     Ok(())
 }
