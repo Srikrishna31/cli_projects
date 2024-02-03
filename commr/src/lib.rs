@@ -74,7 +74,7 @@ pub fn get_args() -> MyResult<Config> {
         show_col2: !matches.get_flag("show_col2"),
         show_col3: !matches.get_flag("show_col3"),
         insensitive: matches.get_flag("insensitive"),
-        delimiter: matches.get_one::<String>("delimiter").unwrap().to_string()
+        delimiter: matches.get_one::<String>("delimiter").unwrap().to_string(),
     })
 }
 
