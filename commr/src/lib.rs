@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
+use std::io::BufRead;
 
 #[derive(Debug)]
 pub struct Config {
@@ -87,9 +88,37 @@ pub fn run(config: Config) -> MyResult<()> {
         return Err(From::from("Both input files cannot be STDIN (\"-\")"));
     }
 
-    let _file1 = open(file1)?;
-    let _file2 = open(file2)?;
-    println!("Opened {} and {}", file1, file2);
+    let mut file1 = open(file1)?;
+    let mut file2 = open(file2)?;
+
+    loop {
+        let mut line1 = String::new();
+        let mut line2 = String::new();
+        let mut print_line = String::new();
+
+        let eof1 = file1.read_line(&mut line1)? == 0;
+        let eof2 = file2.read_line(&mut line2)? == 0;
+
+        if eof1 && eof2 {
+            break;
+        }
+
+        if line1 == line2 {
+            print_line.push_str(&"\t\t");
+            if config.show_col3 {
+                print_line.push_str(&line1);
+            }
+        } else {
+            if config.show_col1 {
+                print_line.push_str(&line1);
+            }
+            if config.show_col2 {
+                print_line.push_str(&line2);
+            }
+            print_line.push_str(&"\t\n");
+        }
+        print!("{print_line}");
+    }
 
     Ok(())
 }
