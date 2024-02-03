@@ -82,6 +82,7 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
+    let print_file = config.files.len() > 1 || config.recursive;
     let entries = find_files(&config.files, config.recursive);
     for entry in entries {
         match entry {
@@ -90,9 +91,19 @@ pub fn run(config: Config) -> MyResult<()> {
                 let file = open(&f)?;
                 let lines = find_lines(file, &config.pattern, config.invert_match);
                 if config.count {
-                    println!("{f}:{}", lines.count());
+                    if print_file {
+                        println!("{f}:{}", lines.count());
+                    } else {
+                        println!("{}", lines.count());
+                    }
                 } else {
-                    lines.for_each(|l| println!("{}: {}", f, l));
+                    lines.for_each(|l| {
+                        if print_file {
+                            println!("{f}:{l}")
+                        } else {
+                            println!("{l}");
+                        }
+                    });
                 }
             }
         }

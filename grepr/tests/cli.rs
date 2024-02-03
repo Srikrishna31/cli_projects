@@ -4,7 +4,7 @@ use rstest::rstest;
 use std::error::Error;
 use std::{fs, path::Path};
 use sys_info::os_type;
-use utils::{gen_bad_file, random_string, TestResult};
+use utils::{gen_bad_file, TestResult};
 
 const PRG: &str = "grepr";
 const BUSTLE: &str = "tests/inputs/bustle.txt";
@@ -46,10 +46,11 @@ fn warns_bad_file() -> TestResult {
 #[case(&["the", BUSTLE], "tests/expected/bustle.txt.the.lowercase")]
 #[case(&["--insensitive", "the", BUSTLE], "tests/expected/bustle.txt.the.lowercase.insensitive")]
 #[case(&["nobody", NOBODY], "tests/expected/nobody.txt")]
+// The 5 tests below are failing because of \ instead of / in paths and also before the ' character.
 #[case(&["-i", "nobody", NOBODY], "tests/expected/nobody.txt.insensitive")]
 #[case(&["The", BUSTLE, EMPTY, FOX, NOBODY], "tests/expected/all.the.capitalized")]
 #[case(&["-i", "the", BUSTLE, EMPTY, FOX, NOBODY], "tests/expected/all.the.lowercase.insensitive")]
-#[case(&["--recursive", "dog", INPUTS_DIR], "tests/expected/dog.insensitive")]
+#[case(&["--recursive", "dog", INPUTS_DIR], "tests/expected/dog.recursive")]
 #[case(&["-ri", "then", INPUTS_DIR], "tests/expected/the.recursive.insensitive")]
 #[case(&["--count", "The", BUSTLE], "tests/expected/bustle.txt.the.capitalized.count")]
 #[case(&["--count", "the", BUSTLE], "tests/expected/bustle.txt.the.lowercase.count")]
@@ -90,7 +91,7 @@ fn warns_dir_not_recursive() -> TestResult {
 }
 
 #[rstest]
-#[case(&[BUSTLE], &[], "tests/expected/bustle.txt.the.capitalized")]
+#[case(&[BUSTLE], &["The"], "tests/expected/bustle.txt.the.capitalized")]
 #[case(&[BUSTLE, EMPTY, FOX, NOBODY], &["-ci", "the", "-"], "tests/expected/the.recursive.insensitive.count.stdin")]
 fn stdin(#[case] files: &[&str], #[case] args: &[&str], #[case] expected: &str) -> TestResult {
     let input = files.iter().try_fold(

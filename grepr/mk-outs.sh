@@ -15,14 +15,14 @@ grep foo $DIR/empty.txt > "$OUT_DIR/foo.empty.txt"
 grep "" $DIR/fox.txt > "$OUT_DIR/empty_regex.fox.txt"
 
 # Case-sensitive
-grep The $DIR/bustle.txt > "$OUT_DIR/bustle.txt.the.captialized"
+grep The $DIR/bustle.txt > "$OUT_DIR/bustle.txt.the.capitalized"
 grep the $DIR/bustle.txt > "$OUT_DIR/bustle.txt.the.lowercase"
 grep -i the $DIR/bustle.txt > "$OUT_DIR/bustle.txt.the.lowercase.insensitive"
 grep nobody $DIR/nobody.txt > "$OUT_DIR/nobody.txt"
 grep -i nobody $DIR/nobody.txt > "$OUT_DIR/nobody.txt.insensitive"
 
 # Case-sensitive multiple files
-grep The $DIR/*.txt > "$OUT_DIR/all.the.captialized"
+grep The $DIR/*.txt > "$OUT_DIR/all.the.capitalized"
 grep -i the $DIR/*.txt > "$OUT_DIR/all.the.lowercase.insensitive"
 
 # Recursive, handle directory
