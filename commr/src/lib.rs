@@ -1,5 +1,5 @@
 use clap::{Arg, Command};
-use command_utils::{open, MyResult};
+use command_utils::{open, LineIterator, MyResult};
 use std::io::BufRead;
 
 #[derive(Debug)]
@@ -88,36 +88,44 @@ pub fn run(config: Config) -> MyResult<()> {
         return Err(From::from("Both input files cannot be STDIN (\"-\")"));
     }
 
-    let mut file1 = open(file1)?;
-    let mut file2 = open(file2)?;
+    let mut file1 = LineIterator::new(open(file1)?);
+    let mut file2 = LineIterator::new(open(file2)?);
 
     loop {
-        let mut line1 = String::new();
-        let mut line2 = String::new();
-        let mut print_line = String::new();
+        let line1 = file1.next();
+        let line2 = file2.next();
+        match (line1, line2) {
+            (Some(l1), Some(l2)) => {
+                let (l1, l2) = (l1?, l2?);
 
-        let eof1 = file1.read_line(&mut line1)? == 0;
-        let eof2 = file2.read_line(&mut line2)? == 0;
-
-        if eof1 && eof2 {
-            break;
+                if l1.1 == l2.1 {
+                    if config.show_col3 {
+                        print!("\t\t{}", l1.1);
+                    }
+                } else {
+                    if config.show_col1 {
+                        print!("{}", l1.1);
+                    }
+                    if config.show_col2 {
+                        print!("\t{}", l2.1);
+                    }
+                }
+            }
+            (Some(l1), None) => {
+                if config.show_col1 {
+                    print!("{}", l1?.1);
+                }
+            }
+            (None, Some(l2)) => {
+                if config.show_col2 {
+                    print!("\t{}", l2?.1);
+                }
+            }
+            (None, None) => {
+                break;
+            }
         }
-
-        if line1 == line2 {
-            print_line.push_str(&"\t\t");
-            if config.show_col3 {
-                print_line.push_str(&line1);
-            }
-        } else {
-            if config.show_col1 {
-                print_line.push_str(&line1);
-            }
-            if config.show_col2 {
-                print_line.push_str(&line2);
-            }
-            print_line.push_str(&"\t\n");
-        }
-        print!("{print_line}");
+        println!();
     }
 
     Ok(())

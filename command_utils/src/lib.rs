@@ -17,3 +17,27 @@ pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
         ))),
     }
 }
+
+
+pub struct LineIterator<T: BufRead> {
+    file: T,
+}
+
+impl <T:BufRead> LineIterator<T> {
+    pub fn new(file: T) -> LineIterator<T> {
+        LineIterator { file }
+    }
+}
+
+impl <T> Iterator for LineIterator<T> where T: BufRead {
+    type Item = MyResult<(usize, String)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut line = String::new();
+        match self.file.read_line(&mut line) {
+            Ok(0) => None,
+            Ok(b) => Some(Ok((b, line))),
+            Err(e) => Some(Err(From::from(e))),
+        }
+    }
+}
