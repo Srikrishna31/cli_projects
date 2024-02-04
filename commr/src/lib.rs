@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use command_utils::{open, LineIterator, MyResult};
+use core::cmp::Ordering;
 use std::io::BufRead;
 
 #[derive(Debug)]
@@ -80,7 +81,6 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    // dbg!(&config);
     let file1 = &config.file1;
     let file2 = &config.file2;
 
@@ -88,38 +88,66 @@ pub fn run(config: Config) -> MyResult<()> {
         return Err(From::from("Both input files cannot be STDIN (\"-\")"));
     }
 
-    let mut file1 = LineIterator::new(open(file1)?);
-    let mut file2 = LineIterator::new(open(file2)?);
+    let case = |line: String| {
+        if config.insensitive {
+            line.to_lowercase()
+        } else {
+            line
+        }
+    };
+    let mut lines1 = open(file1)?.lines().filter_map(Result::ok).map(case);
+    let mut lines2 = open(file2)?.lines().filter_map(Result::ok).map(case);
 
+    let mut line1 = lines1.next();
+    let mut line2 = lines2.next();
     loop {
-        let line1 = file1.next();
-        let line2 = file2.next();
-        match (line1, line2) {
-            (Some(l1), Some(l2)) => {
-                let (l1, l2) = (l1?, l2?);
-
-                if l1.1 == l2.1 {
+        match (&line1, &line2) {
+            (Some(l1), Some(l2)) => match l1.cmp(&l2) {
+                Ordering::Equal => {
                     if config.show_col3 {
-                        print!("\t\t{}", l1.1);
+                        if config.show_col1 {
+                            print!("{}", config.delimiter);
+                        }
+                        if config.show_col2 {
+                            print!("{}", config.delimiter);
+                        }
+
+                        print!("{}", l1);
                     }
-                } else {
+                    line1 = lines1.next();
+                    line2 = lines2.next();
+                }
+                Ordering::Less => {
                     if config.show_col1 {
-                        print!("{}", l1.1);
+                        print!("{}", l1);
+                    }
+
+                    line1 = lines1.next();
+                }
+                Ordering::Greater => {
+                    if config.show_col1 {
+                        print!("{}", config.delimiter);
                     }
                     if config.show_col2 {
-                        print!("\t{}", l2.1);
+                        print!("{}", l2);
                     }
+                    line2 = lines2.next();
                 }
-            }
+            },
             (Some(l1), None) => {
                 if config.show_col1 {
-                    print!("{}", l1?.1);
+                    print!("{}", l1);
                 }
+                line1 = lines1.next();
             }
             (None, Some(l2)) => {
-                if config.show_col2 {
-                    print!("\t{}", l2?.1);
+                if config.show_col1 {
+                    print!("{}", config.delimiter);
                 }
+                if config.show_col2 {
+                    print!("{}", l2);
+                }
+                line2 = lines2.next();
             }
             (None, None) => {
                 break;
