@@ -101,51 +101,52 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut line1 = lines1.next();
     let mut line2 = lines2.next();
     loop {
-        match (&line1, &line2) {
+        let mut print_line:Vec<String> = vec![];
+        match (&mut line1, &mut line2) {
             (Some(l1), Some(l2)) => match l1.cmp(&l2) {
                 Ordering::Equal => {
                     if config.show_col3 {
                         if config.show_col1 {
-                            print!("{}", config.delimiter);
+                            print_line.push("".to_string());
                         }
                         if config.show_col2 {
-                            print!("{}", config.delimiter);
+                            print_line.push("".to_string());
                         }
 
-                        print!("{}", l1);
+                        print_line.push(l1.to_string());
                     }
                     line1 = lines1.next();
                     line2 = lines2.next();
                 }
                 Ordering::Less => {
                     if config.show_col1 {
-                        print!("{}", l1);
+                        print_line.push(l1.to_string());
                     }
 
                     line1 = lines1.next();
                 }
                 Ordering::Greater => {
-                    if config.show_col1 {
-                        print!("{}", config.delimiter);
-                    }
                     if config.show_col2 {
-                        print!("{}", l2);
+                        if config.show_col1 {
+                            print_line.push("".to_string());
+                        }
+                        print_line.push(l2.to_string());
                     }
                     line2 = lines2.next();
                 }
             },
             (Some(l1), None) => {
                 if config.show_col1 {
-                    print!("{}", l1);
+                    print_line.push(l1.to_string());
                 }
                 line1 = lines1.next();
             }
             (None, Some(l2)) => {
                 if config.show_col1 {
-                    print!("{}", config.delimiter);
+                    print_line.push("".to_string());
                 }
                 if config.show_col2 {
-                    print!("{}", l2);
+                    print_line.push(l2.to_string());
                 }
                 line2 = lines2.next();
             }
@@ -153,7 +154,9 @@ pub fn run(config: Config) -> MyResult<()> {
                 break;
             }
         }
-        println!();
+        if !print_line.is_empty() {
+            println!("{}", print_line.join(&config.delimiter));
+        }
     }
 
     Ok(())
