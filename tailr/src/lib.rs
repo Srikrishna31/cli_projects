@@ -1,6 +1,9 @@
+use circular_queue::CircularQueue;
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
+use once_cell::sync::OnceCell;
 use regex::Regex;
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq)]
 enum TakeValue {
@@ -15,6 +18,8 @@ pub struct Config {
     lines: TakeValue,
     quiet: bool,
 }
+
+static NUM_RE: OnceCell<Regex> = OnceCell::new();
 
 pub fn get_args() -> MyResult<Config> {
     let matches = Command::new("tailr")
@@ -45,6 +50,7 @@ pub fn get_args() -> MyResult<Config> {
                 .short('n')
                 .long("lines")
                 .num_args(1)
+                .default_value("10")
                 .required(false)
                 .conflicts_with("bytes"),
         )
@@ -64,15 +70,16 @@ pub fn get_args() -> MyResult<Config> {
             .unwrap()
             .map(String::to_owned)
             .collect::<Vec<String>>(),
-        bytes: None,
-        lines: TakeValue::PlusZero,
+        bytes: matches
+            .get_one::<String>("bytes")
+            .map_or(None, |v| parse_num(v).ok()),
+        lines: parse_num(matches.get_one::<String>("lines").unwrap())?,
         quiet: matches.get_flag("quiet"),
     })
 }
 
 fn parse_num(val: &str) -> MyResult<TakeValue> {
-    let r1 = r"^([+-])?(\d+)$";
-    let re = Regex::new(r1)?;
+    let re = NUM_RE.get_or_init(|| Regex::new(r"^([+-])?(\d+)$").unwrap());
     match re.captures(val) {
         Some(caps) => {
             let sign = caps.get(1).map_or("-", |m| m.as_str());
@@ -91,7 +98,28 @@ fn parse_num(val: &str) -> MyResult<TakeValue> {
     }
 }
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
+    let print_file_name = config.files.len() > 1;
+    for file in config.files {
+        match open(&file) {
+            Ok(mut f) => {
+                let mut buf = CircularQueue::with_capacity(5);
+                let mut line = String::new();
+
+                while let Ok(bytes) = f.read_line(&mut line) {
+                    if bytes == 0 {
+                        break;
+                    }
+                    buf.push(line.clone());
+                    line.clear();
+                }
+                if !config.quiet && print_file_name {
+                    println!("==> {} <==", file);
+                }
+                buf.asc_iter().for_each(|l| println!("{l}"));
+            }
+            Err(e) => eprintln!("{file}:{e}"),
+        }
+    }
     Ok(())
 }
 
@@ -145,8 +173,6 @@ mod tests {
 
         // A floating-point value is invalid
         let res = parse_num("3.14");
-        // assert!(res.is_ok());
-        // assert_eq!(res.unwrap(), TakeValue::TakeNum(3));
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "Invalid number: 3.14");
 
