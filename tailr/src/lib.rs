@@ -1,5 +1,5 @@
-use command_utils::{open, MyResult};
 use clap::{Arg, Command};
+use command_utils::{open, MyResult};
 
 #[derive(Debug, PartialEq)]
 enum TakeValue {
@@ -58,7 +58,11 @@ pub fn get_args() -> MyResult<Config> {
         .get_matches();
 
     Ok(Config {
-        files: matches.get_many::<String>("files").unwrap().map(String::to_owned).collect::<Vec<String>>(),
+        files: matches
+            .get_many::<String>("files")
+            .unwrap()
+            .map(String::to_owned)
+            .collect::<Vec<String>>(),
         bytes: None,
         lines: TakeValue::PlusZero,
         quiet: matches.get_flag("quiet"),
@@ -82,22 +86,22 @@ mod tests {
         // All integers should be interpreted as negative numbers
         let res = parse_num("3");
         assert!(res.is_ok());
-        assert_eq!(res, Ok(TakeValue::TakeNum(-3)));
+        assert_eq!(res.unwrap(), TakeValue::TakeNum(-3));
 
         // A leading "+" should result in a positive number
         let res = parse_num("+3");
         assert!(res.is_ok());
-        assert_eq!(res, Ok(TakeValue::TakeNum(3)));
+        assert_eq!(res.unwrap(), TakeValue::TakeNum(3));
 
         // An explicit "-" value should result in a negative number
         let res = parse_num("-3");
         assert!(res.is_ok());
-        assert_eq!(res, Ok(TakeValue::TakeNum(-3)));
+        assert_eq!(res.unwrap(), TakeValue::TakeNum(-3));
 
         // Zero is zero
         let res = parse_num("0");
         assert!(res.is_ok());
-        assert_eq!(res, Ok(TakeValue::TakeNum(0)));
+        assert_eq!(res.unwrap(), TakeValue::TakeNum(0));
 
         //Plus zero is special
         let res = parse_num("+0");
@@ -124,11 +128,11 @@ mod tests {
         // A floating-point value is invalid
         let res = parse_num("3.14");
         assert!(res.is_err());
-        assert_eq!(res, Err("Invalid number: 3.14"));
+        assert_eq!(res.unwrap_err().to_string(), "Invalid number: 3.14");
 
         // Any noninteger string is invalid
         let res = parse_num("foo");
         assert!(res.is_err());
-        assert_eq!(res, Err("Invalid number: foo"));
+        assert_eq!(res.unwrap_err().to_string(), "Invalid number: foo");
     }
 }
