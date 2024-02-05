@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use command_utils::{open, MyResult};
+use regex::Regex;
 
 #[derive(Debug, PartialEq)]
 enum TakeValue {
@@ -70,7 +71,24 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 fn parse_num(val: &str) -> MyResult<TakeValue> {
-    unimplemented!();
+    let r1 = r"^([+-])?(\d+)$";
+    let re = Regex::new(r1)?;
+    match re.captures(val) {
+        Some(caps) => {
+            let sign = caps.get(1).map_or("-", |m| m.as_str());
+            let num = format!("{}{}", sign, caps.get(2).unwrap().as_str());
+            if let Ok(v) = num.parse() {
+                if sign == "+" && v == 0 {
+                    Ok(TakeValue::PlusZero)
+                } else {
+                    Ok(TakeValue::TakeNum(v))
+                }
+            } else {
+                Err(From::from(val))
+            }
+        }
+        None => Err(format!("Invalid number: {}", val).into()),
+    }
 }
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(&config);
@@ -127,6 +145,8 @@ mod tests {
 
         // A floating-point value is invalid
         let res = parse_num("3.14");
+        // assert!(res.is_ok());
+        // assert_eq!(res.unwrap(), TakeValue::TakeNum(3));
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), "Invalid number: 3.14");
 
