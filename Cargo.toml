@@ -10,6 +10,7 @@ members = [
     "findr",
     "grepr",
     "headr",
+    "tailr",
     "uniqr",
     "utils",
     "wcr",
