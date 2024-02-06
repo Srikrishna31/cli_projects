@@ -101,32 +101,31 @@ pub fn run(config: Config) -> MyResult<()> {
     let print_file_name = config.files.len() > 1;
     for file in config.files {
         match open(&file) {
-            Ok(f) => match config.lines {
-                TakeValue::TakeNum(n) => {
-                    if !config.quiet && print_file_name {
-                        println!("==> {file} <==");
-                    }
-                    if n < 0 {
-                        let mut buf = CircularQueue::with_capacity(n.abs() as usize);
-                        LineIterator::new(f).for_each(|l| {
-                            buf.push(l.unwrap().1);
-                        });
-                        buf.asc_iter().for_each(|l| print!("{l}"));
-                    } else if n > 0 {
-                        LineIterator::new(f).enumerate().for_each(|(i, l)| {
-                            if i >= n as usize {
-                                print!("{}", l.unwrap().1);
-                            }
-                        });
-                    }
+            Ok(f) => {
+                if !config.quiet && print_file_name {
+                    println!("==> {file} <==");
                 }
-                TakeValue::PlusZero => {
-                    if !config.quiet && print_file_name {
-                        println!("==> {file} <==");
+                match config.lines {
+                    TakeValue::TakeNum(n) => {
+                        if n < 0 {
+                            let mut buf = CircularQueue::with_capacity(n.abs() as usize);
+                            LineIterator::new(f).for_each(|l| {
+                                buf.push(l.unwrap().1);
+                            });
+                            buf.asc_iter().for_each(|l| print!("{l}"));
+                        } else if n > 0 {
+                            LineIterator::new(f).enumerate().for_each(|(i, l)| {
+                                if i > n as usize {
+                                    print!("{}", l.unwrap().1);
+                                }
+                            });
+                        }
                     }
-                    LineIterator::new(f).for_each(|l| {
-                        print!("{}", l.unwrap().1);
-                    });
+                    TakeValue::PlusZero => {
+                        LineIterator::new(f).for_each(|l| {
+                            print!("{}", l.unwrap().1);
+                        });
+                    }
                 }
             },
             Err(e) => eprintln!("{file}:{e}"),
