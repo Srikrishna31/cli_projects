@@ -2,6 +2,8 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
 use std::fs;
+use std::fs::File;
+use std::io::Read;
 use utils::{gen_bad_file, random_string, TestResult};
 
 const PRG: &str = "tailr";
@@ -165,35 +167,29 @@ fn skips_bad_file() -> TestResult {
 #[case(&[TEN, "-c", "+1"], "tests/expected/ten.txt.c+1.out")]
 #[case(&[TEN, "-c", "+2"], "tests/expected/ten.txt.c+2.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO], "tests/expected/all.txt.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "0"], "tests/expected/all.txt.n0.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "1"], "tests/expected/all.txt.n1.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-1"], "tests/expected/all.txt.n1.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "3"], "tests/expected/all.txt.n3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-3"], "tests/expected/all.txt.n3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "4"], "tests/expected/all.txt.n4.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "200"], "tests/expected/all.txt.n200.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-200"], "tests/expected/all.txt.n200.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-4"], "tests/expected/all.txt.n4.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+0"], "tests/expected/all.txt.n+0.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+1"], "tests/expected/all.txt.n+1.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+2"], "tests/expected/all.txt.n+2.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3"], "tests/expected/all.txt.c3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-3"], "tests/expected/all.txt.c3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "8"], "tests/expected/all.txt.c8.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-8"], "tests/expected/all.txt.c8.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-12"], "tests/expected/all.txt.c12.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "200"], "tests/expected/all.txt.c200.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-200"], "tests/expected/all.txt.c200.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "+0"], "tests/expected/all.txt.c+0.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "+1"], "tests/expected/all.txt.c+1.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "+2"], "tests/expected/all.txt.c+2.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "0"], "tests/expected/all.n0.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "1"], "tests/expected/all.n1.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-1"], "tests/expected/all.n1.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "3"], "tests/expected/all.n3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-3"], "tests/expected/all.n3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "4"], "tests/expected/all.n4.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-4"], "tests/expected/all.n4.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+1"], "tests/expected/all.n+1.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+3"], "tests/expected/all.n+3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+3", "-q"], "tests/expected/all.n+3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3"], "tests/expected/all.c+3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3", "-q"], "tests/expected/all.c+3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-3"], "tests/expected/all.c3.out")]
 fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
-    let expected = fs::read_to_string(expected_file)?;
+    let mut file = File::open(expected_file)?;
+    let mut buffer: Vec<u8> = Vec::new();
+    file.read_to_end(&mut buffer)?;
+    let expected = String::from_utf8_lossy(&buffer);
     Command::cargo_bin(PRG)?
         .args(args)
         .assert()
         .success()
-        .stdout(expected);
+        .stdout(predicate::eq(expected.as_bytes() as &[u8]));
 
     Ok(())
 }
