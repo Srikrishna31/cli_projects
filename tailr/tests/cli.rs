@@ -11,8 +11,16 @@ const TWO: &str = "tests/inputs/two.txt";
 const THREE: &str = "tests/inputs/three.txt";
 const TEN: &str = "tests/inputs/ten.txt";
 
+#[test]
+fn dies_no_args() {
+    Command::cargo_bin(PRG)
+        .unwrap()
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Usage"));
+}
+
 #[rstest]
-#[case(&[], "", "Usage")]
 #[case(&[EMPTY, "-c", ], &random_string(None), "illegal byte count -- ")]
 #[case(&[EMPTY, "-n", ], &random_string(None), "illegal line count -- ")]
 fn dies(#[case] args: &[&str], #[case] bad: &str, #[case] expected_message: &str) -> TestResult {
@@ -87,9 +95,9 @@ fn skips_bad_file() -> TestResult {
 #[case(&[ONE, "-c", "+0"], "tests/expected/one.txt.c+0.out")]
 #[case(&[ONE, "-c", "+1"], "tests/expected/one.txt.c+1.out")]
 #[case(&[ONE, "-c", "+2"], "tests/expected/one.txt.c+2.out")]
-#[case(&[EMPTY], "tests/expected/empty.txt.out")]
-#[case(&[EMPTY, "-n", "0"], "tests/expected/empty.txt.n0.out")]
-#[case(&[EMPTY, "-n", "1"], "tests/expected/empty.txt.n1.out")]
+#[case(&[TWO], "tests/expected/two.txt.out")]
+#[case(&[TWO, "-n", "0"], "tests/expected/two.txt.n0.out")]
+#[case(&[TWO, "-n", "1"], "tests/expected/two.txt.n1.out")]
 #[case(&[TWO, "-n", "-1"], "tests/expected/two.txt.n1.out")]
 #[case(&[TWO, "-n", "3"], "tests/expected/two.txt.n3.out")]
 #[case(&[TWO, "-n", "-3"], "tests/expected/two.txt.n3.out")]
