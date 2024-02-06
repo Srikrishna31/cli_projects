@@ -4,6 +4,7 @@ use command_utils::{open, LineIterator, MyResult};
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::fmt::Debug;
+use std::io::BufRead;
 
 #[derive(Debug, PartialEq)]
 enum TakeValue {
@@ -97,6 +98,24 @@ fn parse_num(val: &str) -> MyResult<TakeValue> {
         None => Err(format!("Invalid number: {}", val).into()),
     }
 }
+
+fn print_file<T: BufRead, F>(file: T, filter: Option<F>)
+where
+    F: Fn((usize, &MyResult<(usize, String)>)) -> bool + Copy,
+{
+    let mut line_num = 0;
+    LineIterator::new(file).for_each(|l| {
+        line_num += 1;
+        match filter {
+            Some(f) => {
+                if f((line_num, &l)) {
+                    print!("{}", l.unwrap().1);
+                }
+            }
+            None => print!("{}", l.unwrap().1),
+        }
+    });
+}
 pub fn run(config: Config) -> MyResult<()> {
     let print_file_name = config.files.len() > 1;
     for file in config.files {
@@ -114,11 +133,7 @@ pub fn run(config: Config) -> MyResult<()> {
                             });
                             buf.asc_iter().for_each(|l| print!("{l}"));
                         } else if n > 0 {
-                            LineIterator::new(f).enumerate().for_each(|(i, l)| {
-                                if i > n as usize {
-                                    print!("{}", l.unwrap().1);
-                                }
-                            });
+                            print_file(f, Some(|(i, _l): (_, &MyResult<(_, _)>)| i > n as usize));
                         }
                     }
                     TakeValue::PlusZero => {
@@ -127,7 +142,7 @@ pub fn run(config: Config) -> MyResult<()> {
                         });
                     }
                 }
-            },
+            }
             Err(e) => eprintln!("{file}:{e}"),
         }
     }
