@@ -122,56 +122,62 @@ pub fn run(config: Config) -> MyResult<()> {
     let print_file_name = config.files.len() > 1;
     for file in config.files {
         match open(&file) {
-            Ok(f) => {
-                if !config.quiet && print_file_name {
-                    println!("==> {file} <==");
+            Ok(f) => match config.bytes {
+                Some(TakeValue::TakeNum(n)) => {
+                    if n < 0 {
+                        let mut buf = CircularQueue::with_capacity(n.abs() as usize);
+                        f.bytes().for_each(|b| {
+                            buf.push(b.unwrap());
+                        });
+                        if !config.quiet && print_file_name {
+                            println!("==> {file} <==");
+                        }
+                        print!(
+                            "{}",
+                            String::from_utf8_lossy(
+                                &buf.asc_iter().map(|u| *u).collect::<Vec<u8>>()
+                            )
+                        );
+                    } else if n > 0 {
+                        let mut v = Vec::new();
+                        f.bytes().enumerate().for_each(|(i, b)| {
+                            if i > n as usize {
+                                v.push(b.unwrap());
+                            }
+                        });
+                        if !config.quiet && print_file_name {
+                            println!("==> {file} <==");
+                        }
+                        print!("{}", String::from_utf8_lossy(&v));
+                    }
                 }
-                match config.bytes {
-                    Some(TakeValue::TakeNum(n)) => {
+                Some(TakeValue::PlusZero) => {
+                    LineIterator::new(f).for_each(|l| print!("{}", l.unwrap().1))
+                }
+
+                None => match config.lines {
+                    TakeValue::TakeNum(n) => {
                         if n < 0 {
                             let mut buf = CircularQueue::with_capacity(n.abs() as usize);
-                            f.bytes().for_each(|b| {
-                                buf.push(b.unwrap());
-                            });
-                            buf.asc_iter().for_each(|b| print!("{b}"));
-                        } else if n > 0 {
-                            f.bytes().enumerate().for_each(|(i, b)| {
-                                if i > n as usize {
-                                    print!("{}", b.unwrap());
-                                }
-                            });
-                        } else {
-                            println!();
-                        }
-                    }
-                    Some(TakeValue::PlusZero) => {
-                        LineIterator::new(f).for_each(|l| {
-                            print!("{}", l.unwrap().1);
-                        });
-                    }
-                    None => match config.lines {
-                        TakeValue::TakeNum(n) => {
-                            if n < 0 {
-                                let mut buf = CircularQueue::with_capacity(n.abs() as usize);
-                                LineIterator::new(f).for_each(|l| {
-                                    buf.push(l.unwrap().1);
-                                });
-                                buf.asc_iter().for_each(|l| print!("{l}"));
-                            } else if n > 0 {
-                                print_file(
-                                    f,
-                                    Some(|(i, _l): (_, &MyResult<(_, _)>)| i > n as usize),
-                                );
-                            }
-                        }
-                        TakeValue::PlusZero => {
                             LineIterator::new(f).for_each(|l| {
-                                print!("{}", l.unwrap().1);
+                                buf.push(l.unwrap().1);
                             });
+                            if !config.quiet && print_file_name {
+                                println!("==> {file} <==");
+                            }
+                            buf.asc_iter().for_each(|l| print!("{l}"));
+                        } else if n > 0 {
+                            if !config.quiet && print_file_name {
+                                println!("==> {file} <==");
+                            }
+                            print_file(f, Some(|(i, _l): (_, &MyResult<(_, _)>)| i > n as usize));
                         }
-                    },
-                }
-            }
+                    }
+                    TakeValue::PlusZero => {
+                        LineIterator::new(f).for_each(|l| print!("{}", l.unwrap().1))
+                    }
+                },
+            },
             Err(e) => eprintln!("{file}:{e}"),
         }
     }

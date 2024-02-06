@@ -169,17 +169,17 @@ fn skips_bad_file() -> TestResult {
 #[case(&[TEN, EMPTY, ONE, THREE, TWO], "tests/expected/all.txt.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "0"], "tests/expected/all.n0.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "1"], "tests/expected/all.n1.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "1", "-q"], "tests/expected/all.n1.q.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "1", "--quiet"], "tests/expected/all.n1.q.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-1"], "tests/expected/all.n1.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=+1"], "tests/expected/all.n+1.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "3"], "tests/expected/all.n3.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-3"], "tests/expected/all.n3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "4"], "tests/expected/all.n4.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n=-4"], "tests/expected/all.n4.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+1"], "tests/expected/all.n+1.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+3"], "tests/expected/all.n+3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-n", "+3", "-q"], "tests/expected/all.n+3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3"], "tests/expected/all.c+3.out")]
-#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3", "-q"], "tests/expected/all.c+3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "0"], "tests/expected/all.c0.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "3"], "tests/expected/all.c3.out")]
 #[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c=-3"], "tests/expected/all.c3.out")]
+#[case(&[TEN, EMPTY, ONE, THREE, TWO, "-c", "+3"], "tests/expected/all.c+3.out")]
 fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
     let mut file = File::open(expected_file)?;
     let mut buffer: Vec<u8> = Vec::new();
