@@ -145,7 +145,6 @@ pub fn run(config: Config) -> MyResult<()> {
                     Some(TakeValue::PlusZero) => {
                         LineIterator::new(f).for_each(|l| print!("{}", l.unwrap().1))
                     }
-
                     None => match config.lines {
                         TakeValue::TakeNum(n) => match n.cmp(&0) {
                             Ordering::Less => {
