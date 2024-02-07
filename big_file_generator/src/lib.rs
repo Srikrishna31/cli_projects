@@ -22,7 +22,7 @@ pub fn get_args() -> MyResult<Config> {
                 .short('o')
                 .long("outfile")
                 .num_args(1)
-                .default_value("out.txt"),
+                .default_value("1M.txt"),
         )
         .arg(
             Arg::new("lines")

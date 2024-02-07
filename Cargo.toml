@@ -8,7 +8,7 @@ members = [
     "commr",
     "cutr",
     "echor",
-    "findr",
+    "findr", "fortuner",
     "grepr",
     "headr",
     "tailr",
