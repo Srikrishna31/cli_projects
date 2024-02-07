@@ -128,7 +128,6 @@ where
     });
 }
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
     let print_file_name = config.files.len() > 1;
     for file in config.files {
         match open(&file) {
@@ -151,7 +150,7 @@ pub fn run(config: Config) -> MyResult<()> {
                     } else if n > 0 {
                         let mut v = Vec::new();
                         f.bytes().enumerate().for_each(|(i, b)| {
-                            if i >= n as usize {
+                            if i >= (n - 1) as usize {
                                 v.push(b.unwrap());
                             }
                         });
@@ -180,7 +179,12 @@ pub fn run(config: Config) -> MyResult<()> {
                             if !config.quiet && print_file_name {
                                 println!("==> {file} <==");
                             }
-                            print_file(f, Some(|(i, _l): (_, &MyResult<(_, _)>)| i > n as usize));
+                            // LineIterator::new(f).enumerate().for_each(|(i, l)| {
+                            //     if i >= (n - 1) as usize {
+                            //         print!("{}", l.unwrap().1);
+                            //     }
+                            // });
+                            print_file(f, Some(|(i, _l): (_, &MyResult<(_, _)>)| i > (n-1) as usize));
                         }
                     }
                     TakeValue::PlusZero => {
