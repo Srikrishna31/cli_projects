@@ -65,6 +65,17 @@ pub fn get_args() -> MyResult<Config> {
                 .required(false),
         )
         .get_matches();
+    let bytes = matches
+        .get_one::<String>("bytes")
+        .map(parse_num)
+        .transpose()
+        .map_err(|e| format!("illegal byte count -- {e}"))?;
+
+    let lines = matches
+        .get_one::<String>("lines")
+        .map(parse_num)
+        .transpose()
+        .map_err(|e| format!("illegal line count -- {e}"))?;
 
     Ok(Config {
         files: matches
@@ -72,15 +83,13 @@ pub fn get_args() -> MyResult<Config> {
             .unwrap()
             .map(String::to_owned)
             .collect::<Vec<String>>(),
-        bytes: matches
-            .get_one::<String>("bytes")
-            .map_or(None, |v| parse_num(v).ok()),
-        lines: parse_num(matches.get_one::<String>("lines").unwrap())?,
+        bytes,
+        lines: lines.unwrap(),
         quiet: matches.get_flag("quiet"),
     })
 }
 
-fn parse_num(val: &str) -> MyResult<TakeValue> {
+fn parse_num(val: &String) -> MyResult<TakeValue> {
     let re = NUM_RE.get_or_init(|| Regex::new(r"^([+-])?(\d+)$").unwrap());
     match re.captures(val) {
         Some(caps) => {
@@ -93,10 +102,10 @@ fn parse_num(val: &str) -> MyResult<TakeValue> {
                     Ok(TakeValue::TakeNum(v))
                 }
             } else {
-                Err(From::from(val))
+                Err(From::from(val.as_str()))
             }
         }
-        None => Err(format!("Invalid number: {}", val).into()),
+        None => Err(From::from(val.as_str())),
     }
 }
 // type F = dyn Fn((usize, &MyResult<(usize, String)>)) -> bool + Copy;
@@ -119,6 +128,7 @@ where
     });
 }
 pub fn run(config: Config) -> MyResult<()> {
+    dbg!(&config);
     let print_file_name = config.files.len() > 1;
     for file in config.files {
         match open(&file) {
@@ -141,7 +151,7 @@ pub fn run(config: Config) -> MyResult<()> {
                     } else if n > 0 {
                         let mut v = Vec::new();
                         f.bytes().enumerate().for_each(|(i, b)| {
-                            if i > n as usize {
+                            if i >= n as usize {
                                 v.push(b.unwrap());
                             }
                         });
@@ -191,27 +201,27 @@ mod tests {
     #[test]
     fn test_parse_num() {
         // All integers should be interpreted as negative numbers
-        let res = parse_num("3");
+        let res = parse_num(&"3".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), TakeValue::TakeNum(-3));
 
         // A leading "+" should result in a positive number
-        let res = parse_num("+3");
+        let res = parse_num(&"+3".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), TakeValue::TakeNum(3));
 
         // An explicit "-" value should result in a negative number
-        let res = parse_num("-3");
+        let res = parse_num(&"-3".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), TakeValue::TakeNum(-3));
 
         // Zero is zero
-        let res = parse_num("0");
+        let res = parse_num(&"0".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), TakeValue::TakeNum(0));
 
         //Plus zero is special
-        let res = parse_num("+0");
+        let res = parse_num(&"+0".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), TakeValue::PlusZero);
 
@@ -233,13 +243,13 @@ mod tests {
         assert_eq!(res.unwrap(), TakeValue::TakeNum(i64::MIN));
 
         // A floating-point value is invalid
-        let res = parse_num("3.14");
+        let res = parse_num(&"3.14".to_string());
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid number: 3.14");
+        assert_eq!(res.unwrap_err().to_string(), "3.14");
 
         // Any noninteger string is invalid
-        let res = parse_num("foo");
+        let res = parse_num(&"foo".to_string());
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid number: foo");
+        assert_eq!(res.unwrap_err().to_string(), "foo");
     }
 }
