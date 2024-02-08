@@ -18,18 +18,20 @@ pub fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
     }
 }
 
-
 pub struct LineIterator<T: BufRead> {
     file: T,
 }
 
-impl <T:BufRead> LineIterator<T> {
+impl<T: BufRead> LineIterator<T> {
     pub fn new(file: T) -> LineIterator<T> {
         LineIterator { file }
     }
 }
 
-impl <T> Iterator for LineIterator<T> where T: BufRead {
+impl<T> Iterator for LineIterator<T>
+where
+    T: BufRead,
+{
     type Item = MyResult<(usize, String)>;
 
     fn next(&mut self) -> Option<Self::Item> {

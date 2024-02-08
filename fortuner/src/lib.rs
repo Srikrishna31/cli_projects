@@ -19,7 +19,7 @@ pub fn get_args() -> MyResult<Config> {
                 .value_name("SOURCE")
                 .help("Fortune sources")
                 .default_value("fortune")
-                .num_args(0..)
+                .num_args(0..),
         )
         .arg(
             Arg::new("pattern")
@@ -27,7 +27,7 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Pattern")
                 .short('p')
                 .long("pattern")
-                .num_args(1)
+                .num_args(1),
         )
         .arg(
             Arg::new("seed")
@@ -35,12 +35,24 @@ pub fn get_args() -> MyResult<Config> {
                 .help("Seed")
                 .short('s')
                 .long("seed")
-                .num_args(1)
+                .num_args(1),
         )
         .get_matches();
 
     let pattern = matches
         .get_one::<String>("pattern")
-        .map(|p| RegexBuilder::new())
+        .map(|p| RegexBuilder::new(p.as_str()).case_insensitive(true).build())
         .transpose()
         .map_err(|e| format!("-- pattern \"{e}\" is not a valid regex"))?;
+
+    Ok(Config {
+        sources: matches.get_many::<String>("sources").unwrap().map(|s| s.to_owned()).collect(),
+        pattern,
+        seed: Some(0),
+    })
+}
+
+pub fn run(config: Config) -> MyResult<()> {
+    dbg!(config);
+    Ok(())
+}

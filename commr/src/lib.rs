@@ -101,7 +101,7 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut line1 = lines1.next();
     let mut line2 = lines2.next();
     loop {
-        let mut print_line:Vec<String> = vec![];
+        let mut print_line: Vec<String> = vec![];
         match (&mut line1, &mut line2) {
             (Some(l1), Some(l2)) => match l1.cmp(&l2) {
                 Ordering::Equal => {
