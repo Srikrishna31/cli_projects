@@ -1,6 +1,8 @@
 use clap::{Arg, Command};
 use command_utils::MyResult;
+use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Config {
@@ -83,9 +85,37 @@ fn parse_u64(val: &str) -> MyResult<u64> {
     }
 }
 
+fn find_files<'a, F>(
+    paths: &'a [String],
+    filter_func: F,
+) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
+where
+    F: Fn(&PathBuf) -> bool + 'a + Copy,
+{
+    Ok(Box::new(paths.iter().flat_map(move |p| {
+        walkdir::WalkDir::new(p)
+            .into_iter()
+            .filter_map(|e| {
+                if e.is_err() {
+                    eprintln!("{}", &e.unwrap_err());
+                    return None;
+                }
+                e.ok().map(|e| e.path().to_path_buf())
+            })
+            .filter(move |e| e.is_file() && filter_func(e))
+    })))
+}
+
+fn find_files_by_extension(paths: &[String]) -> MyResult<Vec<PathBuf>> {
+    let res = find_files(paths, |p| {
+        p.exists() && p.extension().map_or(true, |e| e != "dat")
+    });
+    res.map(|f| f.sorted().unique().collect())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::parse_u64;
+    use super::{find_files, find_files_by_extension, parse_u64};
 
     #[test]
     fn test_parse_u64() {
@@ -100,5 +130,55 @@ mod tests {
         let res = parse_u64("4");
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 4);
+    }
+
+    #[test]
+    fn test_find_files() {
+        // Verify that the function finds a file known to exist
+        let paths = ["./tests/inputs/jokes".to_string()];
+        let res = find_files_by_extension(&paths);
+        assert!(res.is_ok());
+
+        let files = res.unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(
+            files.get(0).unwrap().to_string_lossy(),
+            "./tests/inputs/jokes"
+        );
+
+        // Fails to find a bad file
+        let paths = ["/path/does/not/exist".to_string()];
+        let res = find_files_by_extension(&paths);
+        // assert!(res.is_err());
+
+        // Finds all the input files, excludes "*.dat"
+        let paths = ["./tests/inputs".to_string()];
+        let res = find_files_by_extension(&paths);
+        assert!(res.is_ok());
+
+        // Check number and order of files
+        let files = res.unwrap();
+        assert_eq!(files.len(), 5);
+        let first = files.get(0).unwrap().display().to_string();
+        assert!(first.contains("ascii-art"));
+        let last = files.last().unwrap().display().to_string();
+        assert!(last.contains("quotes"));
+
+        // Test for multiple sources, path must be unique and sorted
+        let paths = [
+            "./tests/inputs/jokes".to_string(),
+            "./tests/inputs/ascii-art".to_string(),
+            "./tests/inputs/jokes".to_string(),
+        ];
+        let res = find_files_by_extension(&paths);
+        assert!(res.is_ok());
+        let files = res.unwrap();
+        assert_eq!(files.len(), 2);
+        if let Some(filename) = files.first().unwrap().file_name() {
+            assert_eq!(filename.to_string_lossy(), "ascii-art".to_string());
+        }
+        if let Some(filename) = files.last().unwrap().file_name() {
+            assert_eq!(filename.to_string_lossy(), "jokes".to_string());
+        }
     }
 }

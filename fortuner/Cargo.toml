@@ -10,7 +10,7 @@ clap = "4"
 command_utils = {path="../command_utils"}
 walkdir = "2"
 regex = "1"
-
+itertools = "0.12"
 
 [dev-dependencies]
 assert_cmd = "2"
