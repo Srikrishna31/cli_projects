@@ -1,6 +1,9 @@
 use clap::{Arg, Command};
 use command_utils::MyResult;
 use itertools::Itertools;
+use rand::rngs::{StdRng, ThreadRng};
+use rand::seq::SliceRandom;
+use rand::{Rng, RngCore, SeedableRng};
 use regex::{Regex, RegexBuilder};
 use std::fs;
 use std::io::Read;
@@ -147,9 +150,17 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
     Ok(res)
 }
 
+fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<&String> {
+    let mut rng: Box<dyn RngCore> = match seed {
+        Some(s) => Box::<StdRng>::new(rand::rngs::StdRng::seed_from_u64(s)),
+        None => Box::<ThreadRng>::new(rand::thread_rng().into()),
+    };
+    Some(&fortunes.choose(&mut rng).unwrap().text)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{find_files_by_extension, parse_u64, read_fortunes};
+    use super::{find_files_by_extension, parse_u64, pick_fortune, read_fortunes, Fortune};
     use std::path::PathBuf;
 
     #[test]
@@ -245,5 +256,30 @@ mod tests {
         ]);
         assert!(res.is_ok());
         assert_eq!(res.unwrap().len(), 11);
+    }
+
+    #[test]
+    fn test_pick_fortune() {
+        let fortunes = &[
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "You cannot achieve the impossible without \
+                        attempting the absurd."
+                    .to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Assumption is the mother of all screw-ups.".to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Neckties strangle clear thinking.".to_string(),
+            },
+        ];
+        // Pick a fortune with a seed
+        assert_eq!(
+            pick_fortune(fortunes, Some(1)).unwrap(),
+            &"Neckties strangle clear thinking.".to_string()
+        );
     }
 }

@@ -11,6 +11,7 @@ command_utils = {path="../command_utils"}
 walkdir = "2"
 regex = "1"
 itertools = "0.12"
+rand = "0.8"
 
 [dev-dependencies]
 assert_cmd = "2"
