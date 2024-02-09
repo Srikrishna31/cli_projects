@@ -2,6 +2,8 @@ use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
+use walkdir;
 
 pub type MyResult<T> = Result<T, Box<dyn Error>>;
 
@@ -42,4 +44,26 @@ where
             Err(e) => Some(Err(From::from(e))),
         }
     }
+}
+
+
+pub fn find_files<'a, F>(
+    paths: &'a [String],
+    filter_func: F,
+) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
+    where
+        F: Fn(&PathBuf) -> bool + 'a + Copy,
+{
+    Ok(Box::new(paths.iter().flat_map(move |p| {
+        walkdir::WalkDir::new(p)
+            .into_iter()
+            .filter_map(move |e| {
+                if e.is_err() {
+                    eprintln!("{p}: {}", &e.unwrap_err());
+                    return None;
+                }
+                e.ok().map(|e| e.path().to_path_buf())
+            })
+            .filter(move |e| e.is_file() && filter_func(e))
+    })))
 }

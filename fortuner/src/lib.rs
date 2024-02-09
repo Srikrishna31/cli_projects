@@ -1,14 +1,13 @@
 use clap::{Arg, Command};
-use command_utils::MyResult;
+use command_utils::{find_files, MyResult};
 use itertools::Itertools;
-use rand::rngs::{StdRng, ThreadRng};
-use rand::seq::SliceRandom;
-use rand::{Rng, RngCore, SeedableRng};
+use rand::{
+    rngs::{StdRng, ThreadRng},
+    seq::SliceRandom,
+    RngCore, SeedableRng,
+};
 use regex::{Regex, RegexBuilder};
-use std::fs;
-use std::io::Read;
-use std::net::ToSocketAddrs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 #[derive(Debug)]
 pub struct Config {
@@ -93,8 +92,12 @@ pub fn run(config: Config) -> MyResult<()> {
         }
     } else {
         let no_fortunes = "No fortunes found".to_string();
-        println!("{}", pick_fortune(&fortunes, config.seed)
-            .or_else(|| Some(&no_fortunes)).unwrap());
+        println!(
+            "{}",
+            pick_fortune(&fortunes, config.seed)
+                .or_else(|| Some(&no_fortunes))
+                .unwrap()
+        );
     }
 
     Ok(())
@@ -105,27 +108,6 @@ fn parse_u64(val: &str) -> MyResult<u64> {
         Ok(n) => Ok(n),
         _ => Err(From::from(format!("\"{val}\" not a valid integer"))),
     }
-}
-
-fn find_files<'a, F>(
-    paths: &'a [String],
-    filter_func: F,
-) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
-where
-    F: Fn(&PathBuf) -> bool + 'a + Copy,
-{
-    Ok(Box::new(paths.iter().flat_map(move |p| {
-        walkdir::WalkDir::new(p)
-            .into_iter()
-            .filter_map(move |e| {
-                if e.is_err() {
-                    eprintln!("{p}: {}", &e.unwrap_err());
-                    return None;
-                }
-                e.ok().map(|e| e.path().to_path_buf())
-            })
-            .filter(move |e| e.is_file() && filter_func(e))
-    })))
 }
 
 fn find_files_by_extension(paths: &[String]) -> MyResult<Vec<PathBuf>> {
@@ -144,7 +126,7 @@ struct Fortune {
 fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
     let mut res = vec![];
     for f in paths {
-        let mut content = fs::read_to_string(f)?;
+        let content = fs::read_to_string(f)?;
         let source = f
             .file_name()
             .ok_or(format!("Invalid file name: {}", f.display()))?
@@ -165,10 +147,11 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
 
 fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<&String> {
     let mut rng: Box<dyn RngCore> = match seed {
-        Some(s) => Box::<StdRng>::new(rand::rngs::StdRng::seed_from_u64(s)),
+        Some(s) => Box::<StdRng>::new(StdRng::seed_from_u64(s)),
         None => Box::<ThreadRng>::new(rand::thread_rng().into()),
     };
-    Some(&fortunes.choose(&mut rng).unwrap().text)
+
+    fortunes.choose(&mut rng).map(|v| &v.text)
 }
 
 #[cfg(test)]
@@ -208,6 +191,8 @@ mod tests {
         // Fails to find a bad file
         let paths = ["/path/does/not/exist".to_string()];
         let res = find_files_by_extension(&paths);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().len(), 0);
         // assert!(res.is_err());
 
         // Finds all the input files, excludes "*.dat"
@@ -252,12 +237,12 @@ mod tests {
             assert_eq!(fortunes.len(), 6);
             assert_eq!(
                 fortunes.first().unwrap().text,
-                "Q. What do you call a head of lettuce in a shirt and tie?\n\
+                "Q. What do you call a head of lettuce in a shirt and tie?\r\n\
                     A. Collared greens."
             );
             assert_eq!(
                 fortunes.last().unwrap().text,
-                "Q: What do you call a deer wearing an eye patch?\n\
+                "Q: What do you call a deer wearing an eye patch?\r\n\
                 A: A bad idea (bad-eye deer)."
             );
         }
