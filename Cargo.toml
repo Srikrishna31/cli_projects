@@ -3,12 +3,14 @@ resolver = "2"
 
 members = [
     "big_file_generator",
+    "calr",
     "catr",
     "command_utils",
     "commr",
     "cutr",
     "echor",
-    "findr", "fortuner",
+    "findr",
+    "fortuner",
     "grepr",
     "headr",
     "tailr",
@@ -18,10 +20,10 @@ members = [
 ]
 
 [profile.release]
-#debug = false
-#lto = true
-#strip = true
-#panic = "abort"
+debug = false
+lto = true
+strip = true
+panic = "abort"
 codegen-units=1
 opt-level="s"
 
