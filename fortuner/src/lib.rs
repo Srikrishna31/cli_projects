@@ -80,10 +80,23 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
     let files = find_files_by_extension(&config.sources)?;
     let fortunes = read_fortunes(&files)?;
-    println!("{:#?}", fortunes.last());
+    if let Some(pattern) = config.pattern {
+        let mut prev_source = None;
+        for fortune in fortunes.iter().filter(|f| pattern.is_match(&f.text)) {
+            if prev_source != Some(&fortune.source) {
+                eprintln!("({})\n%", fortune.source);
+                prev_source = Some(&fortune.source);
+            }
+            println!("{}", fortune.text);
+        }
+    } else {
+        let no_fortunes = "No fortunes found".to_string();
+        println!("{}", pick_fortune(&fortunes, config.seed)
+            .or_else(|| Some(&no_fortunes)).unwrap());
+    }
+
     Ok(())
 }
 
