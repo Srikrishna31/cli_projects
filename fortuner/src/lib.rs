@@ -2,6 +2,9 @@ use clap::{Arg, Command};
 use command_utils::MyResult;
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
+use std::fs;
+use std::io::Read;
+use std::net::ToSocketAddrs;
 use std::path::PathBuf;
 
 #[derive(Debug)]
@@ -113,9 +116,38 @@ fn find_files_by_extension(paths: &[String]) -> MyResult<Vec<PathBuf>> {
     res.map(|f| f.sorted().unique().collect())
 }
 
+#[derive(Debug)]
+struct Fortune {
+    source: String,
+    text: String,
+}
+
+fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
+    let mut res = vec![];
+    for f in paths {
+        let mut content = fs::read_to_string(f)?;
+        let source = f
+            .file_name()
+            .ok_or(format!("Invalid file name: {}", f.display()))?
+            .to_string_lossy()
+            .to_string();
+        for fortune in content.split("%") {
+            if !fortune.trim().is_empty() {
+                res.push(Fortune {
+                    source: source.clone(),
+                    text: fortune.trim().to_string(),
+                });
+            }
+        }
+    }
+
+    Ok(res)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{find_files, find_files_by_extension, parse_u64};
+    use super::{find_files_by_extension, parse_u64, read_fortunes};
+    use std::path::PathBuf;
 
     #[test]
     fn test_parse_u64() {
@@ -180,5 +212,35 @@ mod tests {
         if let Some(filename) = files.last().unwrap().file_name() {
             assert_eq!(filename.to_string_lossy(), "jokes".to_string());
         }
+    }
+
+    #[test]
+    fn test_read_fortunes() {
+        // One input file
+        let res = read_fortunes(&[PathBuf::from("./tests/inputs/jokes")]);
+        assert!(res.is_ok());
+
+        if let Ok(fortunes) = res {
+            // Correct number and sorting
+            assert_eq!(fortunes.len(), 6);
+            assert_eq!(
+                fortunes.first().unwrap().text,
+                "Q. What do you call a head of lettuce in a shirt and tie?\n\
+                    A. Collared greens."
+            );
+            assert_eq!(
+                fortunes.last().unwrap().text,
+                "Q: What do you call a deer wearing an eye patch?\n\
+                A: A bad idea (bad-eye deer)."
+            );
+        }
+
+        // Multiple input files
+        let res = read_fortunes(&[
+            PathBuf::from("./tests/inputs/jokes"),
+            PathBuf::from("./tests/inputs/quotes"),
+        ]);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().len(), 11);
     }
 }
