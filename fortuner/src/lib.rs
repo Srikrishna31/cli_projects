@@ -88,7 +88,11 @@ pub fn run(config: Config) -> MyResult<()> {
                 eprintln!("({})\n%", fortune.source);
                 prev_source = Some(&fortune.source);
             }
-            println!("{}", fortune.text);
+            println!("{}\n%", fortune.text);
+        }
+
+        if prev_source.is_none() {
+            println!("No fortunes found");
         }
     } else {
         let no_fortunes = "No fortunes found".to_string();

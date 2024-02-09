@@ -5,12 +5,12 @@ use std::fs;
 use utils::{gen_bad_file, random_string, TestResult};
 
 const PRG: &str = "fortuner";
-const FORTUNE_DIR: &str = "./tests/inputs";
-const EMPTY_DIR: &str = "./tests/inputs/empty";
-const JOKES: &str = "./tests/inputs/jokes";
+const FORTUNE_DIR: &str = "tests/inputs";
+const EMPTY_DIR: &str = "tests/inputs/empty";
+const JOKES: &str = "tests/inputs/jokes";
 
-const LITERATURE: &str = "./tests/inputs/literature";
-const QUOTES: &str = "./tests/inputs/quotes";
+const LITERATURE: &str = "tests/inputs/literature";
+const QUOTES: &str = "tests/inputs/quotes";
 
 #[test]
 fn dies_bad_file() -> TestResult {
@@ -36,13 +36,14 @@ fn dies_bad_seed() -> TestResult {
     Ok(())
 }
 
+// The line endings have to be changed for Windows and Linux. Currently they
+// are set for Windows.
 #[rstest]
 #[case(&[EMPTY_DIR], "No fortunes found\n")]
-#[case(&[QUOTES, "-s", "1"], "You can observe a lot just by watching.\n-- Yogi Berra\n")]
-#[case(&[JOKES, "-s", "1"], "Q: What happens when frogs park illegally?\nA: They get toad.\n")]
-#[case(&[FORTUNE_DIR, "-s", "10"], "Q: Why did the fungus and the alga marry?\nA: Because they took a lichen to each other!\n")]
+#[case(&[QUOTES, "-s", "1"], "You can observe a lot just by watching.\r\n-- Yogi Berra\n")]
+#[case(&[JOKES, "-s", "1"], "Q: What happens when frogs park illegally?\r\nA: They get toad.\n")]
+#[case(&[FORTUNE_DIR, "-s", "10"], "Q: Why did the fungus and the alga marry?\r\nA: Because they took a lichen to each other!\n")]
 fn run(#[case] args: &[&str], #[case] expected: &'static str) -> TestResult {
-    let expected = fs::read_to_string(expected)?;
     Command::cargo_bin(PRG)?
         .args(args)
         .assert()
