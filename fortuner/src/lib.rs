@@ -77,7 +77,10 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    dbg!(&config);
+    let files = find_files_by_extension(&config.sources)?;
+    let fortunes = read_fortunes(&files)?;
+    println!("{:#?}", fortunes.last());
     Ok(())
 }
 
@@ -98,9 +101,9 @@ where
     Ok(Box::new(paths.iter().flat_map(move |p| {
         walkdir::WalkDir::new(p)
             .into_iter()
-            .filter_map(|e| {
+            .filter_map(move |e| {
                 if e.is_err() {
-                    eprintln!("{}", &e.unwrap_err());
+                    eprintln!("{p}: {}", &e.unwrap_err());
                     return None;
                 }
                 e.ok().map(|e| e.path().to_path_buf())
