@@ -7,7 +7,7 @@ pub struct Config {
     month: Option<u32>,
     year: i32,
     today: NaiveDate,
- }
+}
 
 pub fn get_args() -> MyResult<Config> {
     let matches = Command::new("grepr")
