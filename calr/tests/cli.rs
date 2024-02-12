@@ -2,7 +2,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use rstest::rstest;
 use std::fs;
-use utils::{gen_bad_file, TestResult};
+use utils::TestResult;
 
 const PRG: &str = "calr";
 
@@ -89,7 +89,7 @@ fn default_one_month() -> TestResult {
 fn year() -> TestResult {
     let cmd = Command::cargo_bin(PRG)?.args(&["-y"]).assert().success();
     let stdout = String::from_utf8(cmd.get_output().stdout.clone())?;
-    let lines: Vec<&str> = stdout.split('\n').collect();
+    let lines: Vec<_> = stdout.split('\n').collect();
     assert_eq!(lines.len(), 7);
     Ok(())
 }
