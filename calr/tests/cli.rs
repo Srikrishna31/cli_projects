@@ -7,21 +7,21 @@ use utils::TestResult;
 const PRG: &str = "calr";
 
 #[rstest]
-#[case(&[], "0", "year \"{}\" not in the range 1 through 9999")]
-#[case(&[], "10000", "year \"{}\" not in the range 1 through 9999")]
+#[case(&[], "0", "year \"{}\" not in the range 1-9999")]
+#[case(&[], "10000", "year \"{}\" not in the range 1-9999")]
 #[case(&[], "foo", "Invalid integer \"{}\"")]
-#[case(&["-m", ], "0", "month \"0\" not in the range 1 through 12")]
-#[case(&["-m"], "13", "month \"13\" not in the range 1 through 12")]
+#[case(&["-m", ], "0", "month \"0\" not in the range 1-12")]
+#[case(&["-m"], "13", "month \"13\" not in the range 1-12")]
 #[case(&["-m"], "foo", "Invalid month \"foo\"")]
-#[case(&["-y", "-m", ], "1", "The argument '-m <MONTH>' cannot be used with '--year'")]
-#[case(&["-y"], "2000", "The argument '<YEAR>' cannot be used with '--year'")]
+#[case(&["-y", "-m", ], "1", "the argument '--year' cannot be used with '--month <MONTH>'")]
+#[case(&["-y"], "2000", "the argument '--year' cannot be used with '[YEAR]'")]
 fn dies(#[case] args: &[&str], #[case] bad: &str, #[case] expected: &str) -> TestResult {
     let new_args = [args, &[bad]].concat();
     Command::cargo_bin(PRG)?
         .args(&new_args)
         .assert()
         .failure()
-        .stderr(str::replace(expected, "{}", bad));
+        .stderr(predicate::str::contains(str::replace(expected, "{}", bad)));
     Ok(())
 }
 

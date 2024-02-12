@@ -43,7 +43,7 @@ pub fn get_args() -> MyResult<Config> {
 
     let today = chrono::Local::now().date_naive();
     let year = if let Some(y) = matches.get_one::<String>("YEAR") {
-        y.parse().unwrap()
+        parse_year(y)?
     } else {
         today.year()
     };
@@ -54,8 +54,8 @@ pub fn get_args() -> MyResult<Config> {
         } else {
             matches
                 .get_one::<String>("month")
-                .map(|m| m.parse().unwrap())
-                .or_else(|| Some(today.month()))
+                .map(|v| parse_month(v))
+                .transpose()?
         },
         year: matches
             .get_flag("year")
@@ -91,7 +91,7 @@ fn parse_month(month: &str) -> MyResult<u32> {
         Ok(_) => Err(From::from(format!(
             "month \"{month}\" not in the range 1-12"
         ))),
-        Err(e) => match month {
+        _ => match month.to_lowercase().as_str() {
             "ja" | "jan" | "january" => Ok(1),
             "f" | "feb" | "february" => Ok(2),
             "mar" | "march" => Ok(3),
