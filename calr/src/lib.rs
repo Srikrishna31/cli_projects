@@ -1,6 +1,7 @@
 use chrono::{Datelike, NaiveDate};
 use clap::{Arg, Command};
 use command_utils::MyResult;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Config {
@@ -18,7 +19,8 @@ pub fn get_args() -> MyResult<Config> {
             Arg::new("YEAR")
                 .value_name("YEAR")
                 .help("Year (1-9999)")
-                .num_args(1),
+                .num_args(1)
+                .conflicts_with("year"),
         )
         .arg(
             Arg::new("month")
@@ -53,6 +55,7 @@ pub fn get_args() -> MyResult<Config> {
             matches
                 .get_one::<String>("month")
                 .map(|m| m.parse().unwrap())
+                .or_else(|| Some(today.month()))
         },
         year: matches
             .get_flag("year")
@@ -62,7 +65,37 @@ pub fn get_args() -> MyResult<Config> {
     })
 }
 
+fn parse_int<T: FromStr>(val: &str) -> MyResult<T> {
+    match val.parse() {
+        Ok(n) => Ok(n),
+        _ => Err(From::from(format!("Invalid integer \"{val}\""))),
+    }
+}
+
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(&config);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_int;
+
+    #[test]
+    fn test_parse_int() {
+        // Parse positive int as usize
+        let res = parse_int::<usize>("1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1usize);
+
+        // Parse negative int as i32
+        let res = parse_int::<i32>("-1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), -1i32);
+
+        // Fail on a string
+        let res = parse_int::<i64>("foo");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
+    }
 }
