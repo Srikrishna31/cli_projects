@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
+use std::str::FromStr;
 use walkdir;
 
 pub type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -66,4 +67,34 @@ pub fn find_files<'a, F>(
             })
             .filter(move |e| e.is_file() && filter_func(e))
     })))
+}
+
+pub fn parse_int<T: FromStr>(val: &str) -> MyResult<T> {
+    match val.parse() {
+        Ok(n) => Ok(n),
+        _ => Err(From::from(format!("Invalid integer \"{val}\""))),
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::parse_int;
+    #[test]
+    fn test_parse_int() {
+        // Parse positive int as usize
+        let res = parse_int::<usize>("1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), 1usize);
+
+        // Parse negative int as i32
+        let res = parse_int::<i32>("-1");
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), -1i32);
+
+        // Fail on a string
+        let res = parse_int::<i64>("foo");
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
+    }
 }

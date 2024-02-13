@@ -1,6 +1,8 @@
+use ansi_term::Style;
 use chrono::{Datelike, NaiveDate};
 use clap::{Arg, Command};
-use command_utils::MyResult;
+use command_utils::{parse_int, MyResult};
+use itertools::izip;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -9,6 +11,8 @@ pub struct Config {
     year: i32,
     today: NaiveDate,
 }
+
+const LINE_WIDTH: usize = 22;
 
 pub fn get_args() -> MyResult<Config> {
     let matches = Command::new("calr")
@@ -77,13 +81,6 @@ fn parse_year(year: &str) -> MyResult<i32> {
     })
 }
 
-fn parse_int<T: FromStr>(val: &str) -> MyResult<T> {
-    match val.parse() {
-        Ok(n) => Ok(n),
-        _ => Err(From::from(format!("Invalid integer \"{val}\""))),
-    }
-}
-
 fn parse_month(month: &str) -> MyResult<u32> {
     let res = parse_int::<u32>(month);
     match parse_int::<u32>(month) {
@@ -109,41 +106,110 @@ fn parse_month(month: &str) -> MyResult<u32> {
     }
 }
 
+const MONTH_NAMES: [&str; 12] = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
 fn format_month(year: i32, month: u32, print_year: bool, today: NaiveDate) -> Vec<String> {
-    unimplemented!();
+    let first = NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+    let mut days: Vec<String> = (1..first.weekday().number_from_sunday())
+        .map(|_| "  ".to_string())
+        .collect();
+    let is_today = |day: u32| year == today.year() && month == today.month() && day == today.day();
+    let last = last_day_in_month(year, month);
+    days.extend((first.day()..=last.day()).into_iter().map(|num| {
+        let fmt = format!("{:>2}", num);
+        if is_today(num) {
+            Style::new().reverse().paint(fmt).to_string()
+        } else {
+            fmt
+        }
+    }));
+    let month_name = MONTH_NAMES[month as usize - 1];
+    let mut lines = Vec::with_capacity(8);
+    lines.push(format!(
+        "{:^20}  ",
+        if print_year {
+            format!("{} {}", month_name, year)
+        } else {
+            month_name.to_string()
+        }
+    ));
+    lines.push("Su Mo Tu We Th Fr Sa  ".to_string());
+
+    for week in days.chunks(7) {
+        lines.push(format!(
+            "{:width$}  ",
+            week.join(" "),
+            width = LINE_WIDTH - 2
+        ));
+    }
+
+    while lines.len() < 8 {
+        lines.push(" ".repeat(LINE_WIDTH));
+    }
+    lines
 }
 
 fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
-    unimplemented!();
+    // The first day of the next month...
+    let (y, m) = if month == 12 {
+        (year + 1, 1)
+    } else {
+        (year, month + 1)
+    };
+
+    // ... is preceded by the last day of the original month
+    NaiveDate::from_ymd_opt(y, m, 1)
+        .and_then(|d| NaiveDate::pred_opt(&d))
+        .unwrap()
 }
 
 pub fn run(config: Config) -> MyResult<()> {
     dbg!(&config);
+
+    match config.month {
+        Some(month) => {
+            let lines = format_month(config.year, month, true, config.today);
+            println!("{}", lines.join("\n"));
+        }
+        None => {
+            println!("{:>32}", config.year);
+            let months: Vec<_> = (1..=12)
+                .into_iter()
+                .map(|month| format_month(config.year, month, false, config.today))
+                .collect();
+            for (i, chunk) in months.chunks(3).enumerate() {
+                if let [m1, m2, m3] = chunk {
+                    for lines in izip!(m1, m2, m3) {
+                        println!("{}{}{}", lines.0, lines.1, lines.2);
+                    }
+                    if i < 3 {
+                        println!();
+                    }
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{format_month, last_day_in_month, parse_int, parse_month, parse_year};
+    use super::{format_month, last_day_in_month, parse_month, parse_year};
     use chrono::NaiveDate;
-
-    #[test]
-    fn test_parse_int() {
-        // Parse positive int as usize
-        let res = parse_int::<usize>("1");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), 1usize);
-
-        // Parse negative int as i32
-        let res = parse_int::<i32>("-1");
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), -1i32);
-
-        // Fail on a string
-        let res = parse_int::<i64>("foo");
-        assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), "Invalid integer \"foo\"");
-    }
 
     #[test]
     fn test_parse_year() {
@@ -226,7 +292,7 @@ mod tests {
         assert_eq!(format_month(2020, 2, true, today), leap_february);
 
         let may = vec![
-            "       May            ",
+            "        May           ",
             "Su Mo Tu We Th Fr Sa  ",
             "                1  2  ",
             " 3  4  5  6  7  8  9  ",
@@ -238,7 +304,7 @@ mod tests {
         assert_eq!(format_month(2020, 5, false, today), may);
 
         let april_hl = vec![
-            "      April 2021      ",
+            "     April 2021       ",
             "Su Mo Tu We Th Fr Sa  ",
             "             1  2  3  ",
             " 4  5  6  7  8  9 10  ",
