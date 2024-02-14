@@ -65,7 +65,7 @@ fn test_month(#[case] month: &str, #[case] expected: &str) -> TestResult {
 #[case(&["2020", "-m", "april"], "tests/expected/4-2020.txt")]
 #[case(&["2020"], "tests/expected/2020.txt")]
 fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
-    let expected = fs::read_to_string(expected_file)?.trim().to_string();
+    let expected = fs::read_to_string(expected_file)?.to_string();
     Command::cargo_bin(PRG)?
         .args(args)
         .assert()
