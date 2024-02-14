@@ -130,12 +130,11 @@ fn find_files<'a>(
                 })
                 .filter(|e| e.file_type().is_file())
                 .map(|e| Ok(e.path().to_string_lossy().to_string()))
-                .into_iter()
         }))
     } else {
         Box::new(paths.iter().map(|p| {
             let p = std::path::Path::new(p);
-            p.try_exists().map_err(|e| From::from(e)).and_then(|b| {
+            p.try_exists().map_err(From::from).and_then(|b| {
                 if b {
                     if p.is_file() {
                         Ok(String::from(p.to_str().unwrap()))
@@ -161,7 +160,7 @@ fn find_lines<'a, T: BufRead + 'a>(
     pattern: &'a Regex,
     invert_match: bool,
 ) -> Box<dyn Iterator<Item = String> + 'a> {
-    Box::new(file.lines().into_iter().filter_map(move |line| match line {
+    Box::new(file.lines().filter_map(move |line| match line {
         Ok(l) if pattern.is_match(&l) != invert_match => Some(l),
         _ => None,
     }))

@@ -1,5 +1,5 @@
 use clap::{Arg, Command};
-use command_utils::{open, LineIterator, MyResult};
+use command_utils::{open, MyResult};
 use core::cmp::Ordering;
 use std::io::BufRead;
 
@@ -95,8 +95,8 @@ pub fn run(config: Config) -> MyResult<()> {
             line
         }
     };
-    let mut lines1 = open(file1)?.lines().filter_map(Result::ok).map(case);
-    let mut lines2 = open(file2)?.lines().filter_map(Result::ok).map(case);
+    let mut lines1 = open(file1)?.lines().map_while(Result::ok).map(case);
+    let mut lines2 = open(file2)?.lines().map_while(Result::ok).map(case);
 
     let mut line1 = lines1.next();
     let mut line2 = lines2.next();

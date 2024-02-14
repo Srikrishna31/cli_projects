@@ -3,7 +3,6 @@ use chrono::{Datelike, NaiveDate};
 use clap::{Arg, Command};
 use command_utils::{parse_int, MyResult};
 use itertools::izip;
-use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Config {
@@ -41,7 +40,7 @@ pub fn get_args() -> MyResult<Config> {
                 .short('y')
                 .long("year")
                 .num_args(0)
-                .conflicts_with("month"),
+                .conflicts_with_all(["month", "YEAR"]),
         )
         .get_matches();
 
@@ -53,7 +52,9 @@ pub fn get_args() -> MyResult<Config> {
     };
 
     Ok(Config {
-        month: if matches.get_flag("year") {
+        month: if matches.get_one::<String>("month").is_none() && !matches.get_flag("year") {
+            Some(today.month())
+        } else if matches.get_flag("year") {
             None
         } else {
             matches
@@ -71,7 +72,7 @@ pub fn get_args() -> MyResult<Config> {
 
 fn parse_year(year: &str) -> MyResult<i32> {
     parse_int::<i32>(year).and_then(|y| {
-        if y < 1 || y > 9999 {
+        if !(1..=9999).contains(&y) {
             Err(From::from(format!(
                 "year \"{year}\" not in the range 1-9999"
             )))
@@ -82,9 +83,8 @@ fn parse_year(year: &str) -> MyResult<i32> {
 }
 
 fn parse_month(month: &str) -> MyResult<u32> {
-    let res = parse_int::<u32>(month);
     match parse_int::<u32>(month) {
-        Ok(m) if m >= 1 && m <= 12 => Ok(m),
+        Ok(m) if (1..=12).contains(&m) => Ok(m),
         Ok(_) => Err(From::from(format!(
             "month \"{month}\" not in the range 1-12"
         ))),
@@ -128,7 +128,7 @@ fn format_month(year: i32, month: u32, print_year: bool, today: NaiveDate) -> Ve
         .collect();
     let is_today = |day: u32| year == today.year() && month == today.month() && day == today.day();
     let last = last_day_in_month(year, month);
-    days.extend((first.day()..=last.day()).into_iter().map(|num| {
+    days.extend((first.day()..=last.day()).map(|num| {
         let fmt = format!("{:>2}", num);
         if is_today(num) {
             Style::new().reverse().paint(fmt).to_string()
@@ -177,8 +177,6 @@ fn last_day_in_month(year: i32, month: u32) -> NaiveDate {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
-
     match config.month {
         Some(month) => {
             let lines = format_month(config.year, month, true, config.today);
@@ -187,7 +185,6 @@ pub fn run(config: Config) -> MyResult<()> {
         None => {
             println!("{:>32}", config.year);
             let months: Vec<_> = (1..=12)
-                .into_iter()
                 .map(|month| format_month(config.year, month, false, config.today))
                 .collect();
             for (i, chunk) in months.chunks(3).enumerate() {
@@ -307,7 +304,7 @@ mod tests {
             "     April 2021       ",
             "Su Mo Tu We Th Fr Sa  ",
             "             1  2  3  ",
-            " 4  5  6  7  8  9 10  ",
+            " 4  5  6 \u{1b}[7m 7\u{1b}[0m  8  9 10  ",
             "11 12 13 14 15 16 17  ",
             "18 19 20 21 22 23 24  ",
             "25 26 27 28 29 30     ",

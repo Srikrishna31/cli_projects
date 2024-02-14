@@ -4,7 +4,6 @@ use std::io;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::str::FromStr;
-use walkdir;
 
 pub type MyResult<T> = Result<T, Box<dyn Error>>;
 
@@ -47,13 +46,12 @@ where
     }
 }
 
-
 pub fn find_files<'a, F>(
     paths: &'a [String],
     filter_func: F,
 ) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
-    where
-        F: Fn(&PathBuf) -> bool + 'a + Copy,
+where
+    F: Fn(&PathBuf) -> bool + 'a + Copy,
 {
     Ok(Box::new(paths.iter().flat_map(move |p| {
         walkdir::WalkDir::new(p)
@@ -75,7 +73,6 @@ pub fn parse_int<T: FromStr>(val: &str) -> MyResult<T> {
         _ => Err(From::from(format!("Invalid integer \"{val}\""))),
     }
 }
-
 
 #[cfg(test)]
 mod tests {

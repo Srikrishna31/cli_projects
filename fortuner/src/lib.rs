@@ -95,12 +95,10 @@ pub fn run(config: Config) -> MyResult<()> {
             println!("No fortunes found");
         }
     } else {
-        let no_fortunes = "No fortunes found".to_string();
+        // let no_fortunes = "No fortunes found".to_string();
         println!(
             "{}",
-            pick_fortune(&fortunes, config.seed)
-                .or_else(|| Some(&no_fortunes))
-                .unwrap()
+            pick_fortune(&fortunes, config.seed).unwrap_or(&"No fortunes found".to_string())
         );
     }
 
@@ -136,7 +134,7 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
             .ok_or(format!("Invalid file name: {}", f.display()))?
             .to_string_lossy()
             .to_string();
-        for fortune in content.split("%") {
+        for fortune in content.split('%') {
             if !fortune.trim().is_empty() {
                 res.push(Fortune {
                     source: source.clone(),
@@ -152,7 +150,7 @@ fn read_fortunes(paths: &[PathBuf]) -> MyResult<Vec<Fortune>> {
 fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<&String> {
     let mut rng: Box<dyn RngCore> = match seed {
         Some(s) => Box::<StdRng>::new(StdRng::seed_from_u64(s)),
-        None => Box::<ThreadRng>::new(rand::thread_rng().into()),
+        None => Box::<ThreadRng>::new(rand::thread_rng()),
     };
 
     fortunes.choose(&mut rng).map(|v| &v.text)

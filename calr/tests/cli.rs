@@ -65,7 +65,7 @@ fn test_month(#[case] month: &str, #[case] expected: &str) -> TestResult {
 #[case(&["2020", "-m", "april"], "tests/expected/4-2020.txt")]
 #[case(&["2020"], "tests/expected/2020.txt")]
 fn run(#[case] args: &[&str], #[case] expected_file: &str) -> TestResult {
-    let expected = fs::read_to_string(expected_file)?;
+    let expected = fs::read_to_string(expected_file)?.trim().to_string();
     Command::cargo_bin(PRG)?
         .args(args)
         .assert()
@@ -90,6 +90,6 @@ fn year() -> TestResult {
     let cmd = Command::cargo_bin(PRG)?.args(&["-y"]).assert().success();
     let stdout = String::from_utf8(cmd.get_output().stdout.clone())?;
     let lines: Vec<_> = stdout.split('\n').collect();
-    assert_eq!(lines.len(), 7);
+    assert_eq!(lines.len(), 37);
     Ok(())
 }
