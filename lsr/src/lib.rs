@@ -1,4 +1,4 @@
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 use command_utils::{open, MyResult};
 
 #[derive(Debug)]
