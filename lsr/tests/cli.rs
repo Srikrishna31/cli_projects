@@ -59,8 +59,8 @@ fn run_long(#[case] filename: &str, #[case] permissions: &str, #[case] size: &st
         .success();
     let stdout = String::from_utf8(cmd.get_output().stdout.clone())?;
     let parts: Vec<_> = stdout.split_whitespace().collect();
-    assert_eq!(parts[0].unwrap(), permissions);
-    assert_eq!(parts[4].unwrap(), size);
+    assert_eq!(parts[0], permissions);
+    assert_eq!(parts[4], size);
     assert_eq!(parts.last().unwrap(), &filename);
 
     Ok(())
@@ -85,7 +85,7 @@ fn dir_short(#[case] args: &[&str], #[case] expected: &[&str]) -> TestResult {
     let stdout = String::from_utf8(cmd.get_output().stdout.clone())?;
     let lines: Vec<&str> = stdout.split('\n').filter(|s| !s.is_empty()).collect();
     assert_eq!(lines.len(), expected.len());
-    expected.forEach(|e| assert!(lines.contains(e)));
+    let _ = expected.iter().for_each(|e| assert!(lines.contains(e)));
 
     Ok(())
 }
@@ -123,7 +123,7 @@ fn dir_long(#[case] args: &[&str], #[case] expected: &[(&str, &str, &str)]) -> T
         acc
     });
 
-    expected.forEach(|e| assert!(check.contains(e)));
+    let _ = expected.iter().for_each(|e| assert!(check.contains(e)));
 
     Ok(())
 }

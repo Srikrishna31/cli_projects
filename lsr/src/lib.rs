@@ -14,16 +14,36 @@ pub fn get_args() -> MyResult<Config> {
         .author("Krishna Addepalli <coolkrishna31@gmail.com>")
         .about("Rust ls")
         .arg(
+            Arg::new("files")
+                .value_name("FILE")
+                .help("Files and/or directories")
+                .num_args(0..)
+                .default_value("."),
+        )
+        .arg(
             Arg::new("all")
-                .help("Show hidden files")
+                .help("Show all files")
                 .short('a')
                 .long("all")
                 .num_args(0),
-        );
+        )
+        .arg(
+            Arg::new("long")
+                .help("Long listing")
+                .short('l')
+                .long("long")
+                .num_args(0),
+        )
+        .get_matches();
+
     Ok(Config {
-        paths: vec![],
-        long: false,
-        show_hidden: false,
+        paths: matches
+            .get_many::<String>("files")
+            .unwrap()
+            .map(String::clone)
+            .collect(),
+        long: matches.get_flag("long"),
+        show_hidden: matches.get_flag("all"),
     })
 }
 

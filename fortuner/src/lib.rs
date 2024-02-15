@@ -113,7 +113,7 @@ fn parse_u64(val: &str) -> MyResult<u64> {
 }
 
 fn find_files_by_extension(paths: &[String]) -> MyResult<Vec<PathBuf>> {
-    let res = find_files(paths, |p| {
+    let res = find_files(paths, true, |p| {
         p.exists() && p.extension().map_or(true, |e| e != "dat")
     });
     res.map(|f| f.sorted().unique().collect())
@@ -239,12 +239,12 @@ mod tests {
             assert_eq!(fortunes.len(), 6);
             assert_eq!(
                 fortunes.first().unwrap().text,
-                "Q. What do you call a head of lettuce in a shirt and tie?\r\n\
+                "Q. What do you call a head of lettuce in a shirt and tie?\n\
                     A. Collared greens."
             );
             assert_eq!(
                 fortunes.last().unwrap().text,
-                "Q: What do you call a deer wearing an eye patch?\r\n\
+                "Q: What do you call a deer wearing an eye patch?\n\
                 A: A bad idea (bad-eye deer)."
             );
         }

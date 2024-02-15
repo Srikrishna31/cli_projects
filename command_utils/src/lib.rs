@@ -48,23 +48,52 @@ where
 
 pub fn find_files<'a, F>(
     paths: &'a [String],
+    recursive: bool,
     filter_func: F,
 ) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
 where
     F: Fn(&PathBuf) -> bool + 'a + Copy,
 {
-    Ok(Box::new(paths.iter().flat_map(move |p| {
-        walkdir::WalkDir::new(p)
-            .into_iter()
-            .filter_map(move |e| {
-                if e.is_err() {
-                    eprintln!("{p}: {}", &e.unwrap_err());
-                    return None;
-                }
-                e.ok().map(|e| e.path().to_path_buf())
-            })
-            .filter(move |e| e.is_file() && filter_func(e))
-    })))
+    find_dir_entries(paths, recursive, move |p| p.is_file() && filter_func(p))
+}
+
+pub fn find_dir_entries<'a, F>(
+    paths: &'a [String],
+    recursive: bool,
+    filter_func: F,
+) -> MyResult<Box<dyn Iterator<Item = PathBuf> + 'a>>
+where
+    F: Fn(&PathBuf) -> bool + 'a + Copy,
+{
+    // I have to use Box::new twice here since the types from each branch of if are different.
+    // Wrapping in box ensures that the type is unified and the function signature is satisfied.
+    Ok(if recursive {
+        Box::new(paths.iter().flat_map(move |p| {
+            walkdir::WalkDir::new(p)
+                .into_iter()
+                .filter_map(move |e| {
+                    if e.is_err() {
+                        eprintln!("{p}: {}", &e.unwrap_err());
+                        return None;
+                    }
+                    e.ok().map(|e| e.path().to_path_buf())
+                })
+                .filter(move |e| filter_func(e))
+        }))
+    } else {
+        Box::new(paths.iter().filter_map(move |f| {
+            let p = std::path::Path::new(f);
+            if !p.exists() {
+                eprintln!("{f}: No such file or directory");
+                return None;
+            }
+            if filter_func(&p.to_path_buf()) {
+                Some(p.to_path_buf())
+            } else {
+                None
+            }
+        }))
+    })
 }
 
 pub fn parse_int<T: FromStr>(val: &str) -> MyResult<T> {
