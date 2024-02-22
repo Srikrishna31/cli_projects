@@ -1,6 +1,6 @@
 use chrono::Local;
 use clap::{Arg, Command};
-use command_utils::{open, MyResult};
+use command_utils::MyResult;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
@@ -53,10 +53,13 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(&config);
     let paths = find_dir_entries(&config.paths, config.show_hidden)?;
-    for path in paths {
-        println!("{}", path.display());
+    if config.long {
+        println!("{}", format_output(&paths)?);
+    } else {
+        for path in paths {
+            println!("{}", path.display());
+        }
     }
     Ok(())
 }
@@ -130,7 +133,7 @@ fn format_output(paths: &[PathBuf]) -> MyResult<String> {
                         .to_string()
                 }))
                 .with_cell(path.metadata().map_or("?".to_string(), |_| {
-                    path.file_name().unwrap().to_string_lossy().to_string()
+                    path.as_path().to_string_lossy().to_string()
                 })),
         );
     }
@@ -140,8 +143,9 @@ fn format_output(paths: &[PathBuf]) -> MyResult<String> {
 
 // Given a file mode in octal format like 0o755, return a string like "rwxr-xr-x"
 fn format_mode(mode: u32) -> String {
+    // println!("{}", &mode);
     let mut s = String::with_capacity(9);
-    for (i, (perm, c)) in [
+    for (perm, c) in [
         (0o400, 'r'),
         (0o200, 'w'),
         (0o100, 'x'),
@@ -153,7 +157,6 @@ fn format_mode(mode: u32) -> String {
         (0o001, 'x'),
     ]
     .iter()
-    .enumerate()
     {
         if mode & perm != 0 {
             s.push(*c);
@@ -166,7 +169,8 @@ fn format_mode(mode: u32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::{find_dir_entries, format_mode};
+    use crate::{find_dir_entries, format_mode, format_output};
+    use std::path::PathBuf;
 
     #[test]
     fn test_find_dir_entries() {
@@ -247,5 +251,67 @@ mod tests {
         assert_eq!(format_mode(0o644), "rw-r--r--");
         assert_eq!(format_mode(0o421), "r---w---x");
         assert_eq!(format_mode(0o777), "rwxrwxrwx");
+    }
+
+    fn long_match(
+        line: &str,
+        expected_name: &str,
+        expected_perms: &str,
+        expected_size: Option<&str>,
+    ) {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        assert!(parts.len() > 0 && parts.len() <= 10);
+
+        let perms = parts.get(0).unwrap();
+        assert_eq!(perms, &expected_perms);
+
+        if let Some(size) = expected_size {
+            let file_size = parts.get(4).unwrap();
+            assert_eq!(file_size, &size);
+        }
+
+        let display_name = parts.last().unwrap();
+        assert_eq!(display_name, &expected_name);
+    }
+
+    #[test]
+    fn test_format_output_one() {
+        let bustle_path = "tests/inputs/bustle.txt";
+        let bustle = PathBuf::from(bustle_path);
+
+        let res = format_output(&[bustle]);
+        assert!(res.is_ok());
+
+        let out = res.unwrap();
+        let lines: Vec<&str> = out.split('\n').filter(|s| !s.is_empty()).collect();
+        assert_eq!(lines.len(), 1);
+
+        let line1 = lines.first().unwrap();
+        long_match(&line1, bustle_path, "-rw-rw-rw-", Some("202"));
+    }
+
+    #[test]
+    fn test_format_output_two() {
+        let res = format_output(&[
+            PathBuf::from("tests/inputs/dir"),
+            PathBuf::from("tests/inputs/empty.txt"),
+        ]);
+        assert!(res.is_ok());
+
+        let out = res.unwrap();
+        let mut lines: Vec<&str> = out.split('\n').filter(|s| !s.is_empty()).collect();
+        lines.sort();
+        assert_eq!(lines.len(), 2);
+
+        let empty_line = lines.remove(0);
+        long_match(
+            &empty_line,
+            "tests/inputs/empty.txt",
+            "-rw-rw-rw-",
+            Some("0"),
+        );
+
+        let dir_line = lines.remove(0);
+        long_match(&dir_line, "tests/inputs/dir", "drwxrwxrwx", None);
     }
 }
