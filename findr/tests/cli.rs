@@ -3,6 +3,8 @@ use predicates::prelude::*;
 use rstest::rstest;
 use std::{borrow::Cow, fs};
 use utils::{gen_bad_file, TestResult};
+#[cfg(not(windows))]
+use std::path::Path;
 
 const PRG: &str = "findr";
 
